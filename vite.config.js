@@ -1,9 +1,75 @@
 import { defineConfig } from 'vite';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
-    // 設定 base 路徑為 ./，這樣在 GitHub Pages 部署時資源路徑才會正確
     base: './',
     build: {
         outDir: 'dist',
-    }
+    },
+    plugins: [
+        {
+            name: 'save-theme-plugin',
+            configureServer(server) {
+                server.middlewares.use(async (req, res, next) => {
+                    if (req.url === '/api/save-theme' && req.method === 'POST') {
+                        let body = '';
+                        req.on('data', chunk => { body += chunk; });
+                        req.on('end', async () => {
+                            try {
+                                const data = JSON.parse(body);
+                                const { id, name, description, cover, themeJs, themeListJs, questionsJson } = data;
+
+                                const themeDir = path.join(__dirname, 'public', 'modules', id);
+                                const imgDir = path.join(themeDir, 'img');
+                                const soundDir = path.join(themeDir, 'sound');
+
+                                // Create directories
+                                if (!fs.existsSync(themeDir)) fs.mkdirSync(themeDir, { recursive: true });
+                                if (!fs.existsSync(imgDir)) fs.mkdirSync(imgDir, { recursive: true });
+                                if (!fs.existsSync(soundDir)) fs.mkdirSync(soundDir, { recursive: true });
+
+                                // Write theme.js
+                                fs.writeFileSync(path.join(themeDir, 'theme.js'), themeJs);
+
+                                // Write questions.json if provided
+                                if (questionsJson) {
+                                    fs.writeFileSync(path.join(themeDir, 'questions.json'), questionsJson);
+                                }
+
+                                // Update theme_list.js
+                                const listPath = path.join(__dirname, 'public', 'modules', 'theme_list.js');
+                                let listContent = fs.readFileSync(listPath, 'utf8');
+
+                                // Check if ID already exists
+                                if (listContent.includes(`id: "${id}"`)) {
+                                    // Update existing entry (basic replacement)
+                                    const regex = new RegExp(`\\{\\s*id: "${id}"[\\s\\S]*?\\},`, 'g');
+                                    listContent = listContent.replace(regex, themeListJs);
+                                } else {
+                                    // Append to the list before the closing bracket
+                                    const lastBracketIndex = listContent.lastIndexOf('];');
+                                    listContent = listContent.slice(0, lastBracketIndex) + '    ' + themeListJs + '\n' + listContent.slice(lastBracketIndex);
+                                }
+
+                                fs.writeFileSync(listPath, listContent);
+
+                                res.statusCode = 200;
+                                res.end(JSON.stringify({ success: true }));
+                            } catch (error) {
+                                res.statusCode = 500;
+                                res.end(JSON.stringify({ error: error.message }));
+                            }
+                        });
+                        return;
+                    }
+                    next();
+                });
+            }
+        }
+    ]
 });
+
