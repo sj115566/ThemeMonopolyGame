@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>互動複習大富翁</title>
 
     <!-- PWA 設定 -->
-    <link rel="manifest" href="/manifest.json">
+    <link rel="manifest" href="./manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#c3d3c2">
@@ -14,74 +16,265 @@
     <link rel="icon" type="image/png" href="./favicon.png">
 
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 載入全域設定 (Firebase, DEFAULT_SFX) -->
-    <script src="./global_config.js"></script>
+    <!-- 載入全域設定 (Firebase, DEFAULT_SFX) 會在下方 module script 中 import -->
     <!-- 載入語言檔 (新增) -->
     <script src="./lang_config.js"></script>
 
     <style>
         /* --- 核心樣式 --- */
-        body, html { margin: 0; padding: 0; width: 100%; height: 100dvh; overflow: hidden; font-family: 'Inter', system-ui, sans-serif; background-color: #c3d3c2; user-select: none; -webkit-user-select: none; touch-action: none; }
-        
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100dvh;
+            overflow: hidden;
+            font-family: 'Inter', system-ui, sans-serif;
+            background-color: #c3d3c2;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+        }
+
         /* --- 主題選擇器 (允許捲動) --- */
-        #theme-selector { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        #theme-selector {
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
 
         /* --- 遊戲舞台 (Game Stage) --- */
-        #game-stage-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; }
-        #game-stage { position: absolute; top: 0; left: 0; transform-origin: 0 0; box-shadow: 0 20px 50px rgba(0,0,0,0.3); will-change: transform; }
-        #map-bg { display: block; pointer-events: none; }
+        #game-stage-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        #game-stage {
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform-origin: 0 0;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+            will-change: transform;
+        }
+
+        #map-bg {
+            display: block;
+            pointer-events: none;
+        }
 
         /* --- UI 覆蓋層 --- */
-        #ui-overlay { position: absolute; inset: 0; pointer-events: none; z-index: 50; }
-        .ui-element { pointer-events: auto; }
+        #ui-overlay {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        .ui-element {
+            pointer-events: auto;
+        }
 
         /* --- 動畫 --- */
-        @keyframes float-up { 0% { opacity: 0; transform: translate(-50%, 20px) scale(0.8); } 20% { opacity: 1; transform: translate(-50%, 0) scale(1.2); } 80% { opacity: 1; transform: translate(-50%, -20px) scale(1); } 100% { opacity: 0; transform: translate(-50%, -50px) scale(0.5); } }
-        .dice-anim { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: 8rem; font-weight: 900; color: #fff; text-shadow: 0 5px 15px rgba(0,0,0,0.5); animation: float-up 2s ease-out forwards; z-index: 100; pointer-events: none; }
-        @keyframes pulse-glow { 0%, 100% { box-shadow: 0 0 15px 5px rgba(250, 204, 21, 0.6); transform: translate(-50%, -50%) scale(1); } 50% { box-shadow: 0 0 30px 15px rgba(250, 204, 21, 0.4); transform: translate(-50%, -50%) scale(1.15); } }
-        .must-hit { animation: pulse-glow 2s infinite ease-in-out; }
+        @keyframes float-up {
+            0% {
+                opacity: 0;
+                transform: translate(-50%, 20px) scale(0.8);
+            }
+
+            20% {
+                opacity: 1;
+                transform: translate(-50%, 0) scale(1.2);
+            }
+
+            80% {
+                opacity: 1;
+                transform: translate(-50%, -20px) scale(1);
+            }
+
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -50px) scale(0.5);
+            }
+        }
+
+        .dice-anim {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 8rem;
+            font-weight: 900;
+            color: #fff;
+            text-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            animation: float-up 2s ease-out forwards;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        @keyframes pulse-glow {
+
+            0%,
+            100% {
+                box-shadow: 0 0 15px 5px rgba(250, 204, 21, 0.6);
+                transform: translate(-50%, -50%) scale(1);
+            }
+
+            50% {
+                box-shadow: 0 0 30px 15px rgba(250, 204, 21, 0.4);
+                transform: translate(-50%, -50%) scale(1.15);
+            }
+        }
+
+        .must-hit {
+            animation: pulse-glow 2s infinite ease-in-out;
+        }
 
         /* --- 遊戲元件 --- */
-        .game-square { 
-            position: absolute; width: 5.5%; padding-bottom: 5.5%; border-radius: 50%; 
-            transform: translate(-50%, -50%); z-index: 10; cursor: pointer; 
-            background-color: rgba(255, 255, 255, 0.55); border: 2px solid transparent; 
-            transition: all 0.3s ease; 
-            display: flex; justify-content: center; align-items: center; 
-            text-align: center; font-size: 12px; font-weight: bold; color: #374151;
+        .game-square {
+            position: absolute;
+            width: 5.5%;
+            padding-bottom: 5.5%;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+            cursor: pointer;
+            background-color: rgba(255, 255, 255, 0.55);
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            font-size: 12px;
+            font-weight: bold;
+            color: #374151;
         }
-        .game-square span { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100%; }
 
-        .game-square.square-success { background-color: rgba(16, 185, 129, 0.8) !important; border-color: #059669; box-shadow: 0 0 15px #10b981; color: white !important; }
-        .game-square.square-failed { background-color: rgba(239, 68, 68, 0.8) !important; border-color: #dc2626; box-shadow: 0 0 15px #ef4444; color: white !important; }
+        .game-square span {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+        }
 
-        .player-piece { position: absolute; width: 6%; padding-bottom: 6%; z-index: 30; transform: translate(-50%, -50%) translateY(-60px); transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5)); }
-        .player-piece.moving { transform: translate(-50%, -50%) scale(1.2) !important; z-index: 40; }
-        .player-piece img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 50%; border: 3px solid #fff; }
+        .game-square.square-success {
+            background-color: rgba(16, 185, 129, 0.8) !important;
+            border-color: #059669;
+            box-shadow: 0 0 15px #10b981;
+            color: white !important;
+        }
 
-        .shadow-avatar { position: absolute; width: 4%; padding-bottom: 4%; z-index: 20; opacity: 0.7; filter: grayscale(30%) drop-shadow(0 2px 3px rgba(0,0,0,0.3)); transform: translate(-50%, -50%) translateY(20px); transition: all 0.5s ease; }
-        .shadow-avatar img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 50%; border: 2px solid rgba(255,255,255,0.8); background-color: #ccc; }
+        .game-square.square-failed {
+            background-color: rgba(239, 68, 68, 0.8) !important;
+            border-color: #dc2626;
+            box-shadow: 0 0 15px #ef4444;
+            color: white !important;
+        }
+
+        .player-piece {
+            position: absolute;
+            width: 6%;
+            padding-bottom: 6%;
+            z-index: 30;
+            transform: translate(-50%, -50%) translateY(-60px);
+            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            filter: drop-shadow(0 5px 5px rgba(0, 0, 0, 0.5));
+        }
+
+        .player-piece.moving {
+            transform: translate(-50%, -50%) scale(1.2) !important;
+            z-index: 40;
+        }
+
+        .player-piece img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 3px solid #fff;
+        }
+
+        .shadow-avatar {
+            position: absolute;
+            width: 4%;
+            padding-bottom: 4%;
+            z-index: 20;
+            opacity: 0.7;
+            filter: grayscale(30%) drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3));
+            transform: translate(-50%, -50%) translateY(20px);
+            transition: all 0.5s ease;
+        }
+
+        .shadow-avatar img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            background-color: #ccc;
+        }
 
         /* --- 介面元件 --- */
-        .dice-btn { transition: transform 0.1s; } .dice-btn:active { transform: scale(0.95); }
-        .modal-container { max-height: 85dvh; overflow-y: auto; }
+        .dice-btn {
+            transition: transform 0.1s;
+        }
+
+        .dice-btn:active {
+            transform: scale(0.95);
+        }
+
+        .modal-container {
+            max-height: 85dvh;
+            overflow-y: auto;
+        }
 
         /* --- RWD --- */
         @media (orientation: portrait) {
-            #leaderboard-panel { top: 16px !important; left: 16px !important; max-height: 40vh !important; }
-            #player-info-bar { top: 80px !important; bottom: auto !important; left: auto !important; right: 16px !important; flex-direction: row-reverse !important; }
-            #player-info-bar #player-details { margin-left: 0 !important; margin-right: 0.75rem !important; transform-origin: right center !important; }
+            #leaderboard-panel {
+                top: 16px !important;
+                left: 16px !important;
+                max-height: 40vh !important;
+            }
+
+            #player-info-bar {
+                top: 80px !important;
+                bottom: auto !important;
+                left: auto !important;
+                right: 16px !important;
+                flex-direction: row-reverse !important;
+            }
+
+            #player-info-bar #player-details {
+                margin-left: 0 !important;
+                margin-right: 0.75rem !important;
+                transform-origin: right center !important;
+            }
         }
     </style>
+  <script type="module" crossorigin src="./assets/index-BfPmuRbx.js"></script>
 </head>
+
 <body>
 
     <!-- PART 1: 主題選擇器 -->
     <div id="theme-selector" class="fixed inset-0 z-[100] bg-gray-100 hidden">
         <div class="min-h-full p-6 md:p-10 flex flex-col items-center justify-center">
-            <h1 class="text-3xl md:text-5xl font-extrabold text-gray-800 mb-8 mt-4 text-center tracking-tight" data-lang="themeSelectorTitle">📚 請選擇複習主題</h1>
+            <h1 class="text-3xl md:text-5xl font-extrabold text-gray-800 mb-8 mt-4 text-center tracking-tight"
+                data-lang="themeSelectorTitle">📚 請選擇複習主題</h1>
             <div id="theme-list" class="flex flex-wrap justify-center gap-8 w-full max-w-7xl pb-10">
-                <div class="text-center text-gray-500 animate-pulse text-xl w-full" data-lang="themeLoading">正在讀取主題列表...</div>
+                <div class="text-center text-gray-500 animate-pulse text-xl w-full" data-lang="themeLoading">正在讀取主題列表...
+                </div>
             </div>
         </div>
     </div>
@@ -100,528 +293,182 @@
             </div>
         </div>
         <div id="ui-overlay">
-            <button id="settings-btn" class="ui-element absolute top-4 right-4 bg-black/30 hover:bg-black/50 text-white p-3 rounded-full backdrop-blur-md transition-all z-50">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+            <button id="settings-btn"
+                class="ui-element absolute top-4 right-4 bg-black/30 hover:bg-black/50 text-white p-3 rounded-full backdrop-blur-md transition-all z-50">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
             </button>
-            <div id="leaderboard-panel" class="ui-element absolute top-4 left-4 flex flex-col items-start z-40 max-h-[50vh] transition-all duration-300">
-                <button id="leaderboard-toggle" class="bg-white/90 backdrop-blur-md p-2 rounded-full shadow-lg mb-2 flex items-center justify-center w-12 h-12"><span id="lb-icon" class="text-xl">✖️</span></button>
-                <div id="leaderboard-content" class="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl overflow-hidden w-64 flex flex-col transition-all origin-top-left">
-                     <div class="flex p-2 bg-gray-100/50 border-b border-gray-200"><button id="tab-live" class="flex-1 py-1 px-2 text-sm font-bold rounded-lg bg-blue-500 text-white mr-1" data-lang="tabLive">即時</button><button id="tab-history" class="flex-1 py-1 px-2 text-sm font-bold rounded-lg bg-gray-200 text-gray-600 ml-1" data-lang="tabHistory">歷史</button></div>
+            <div id="leaderboard-panel"
+                class="ui-element absolute top-4 left-4 flex flex-col items-start z-40 max-h-[50vh] transition-all duration-300">
+                <button id="leaderboard-toggle"
+                    class="bg-white/90 backdrop-blur-md p-2 rounded-full shadow-lg mb-2 flex items-center justify-center w-12 h-12"><span
+                        id="lb-icon" class="text-xl">✖️</span></button>
+                <div id="leaderboard-content"
+                    class="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl overflow-hidden w-64 flex flex-col transition-all origin-top-left">
+                    <div class="flex p-2 bg-gray-100/50 border-b border-gray-200"><button id="tab-live"
+                            class="flex-1 py-1 px-2 text-sm font-bold rounded-lg bg-blue-500 text-white mr-1"
+                            data-lang="tabLive">即時</button><button id="tab-history"
+                            class="flex-1 py-1 px-2 text-sm font-bold rounded-lg bg-gray-200 text-gray-600 ml-1"
+                            data-lang="tabHistory">歷史</button></div>
                     <ul id="leaderboard-list" class="p-2 overflow-y-auto flex-grow space-y-1 text-sm max-h-60"></ul>
                 </div>
             </div>
-            <div id="player-info-bar" class="ui-element absolute bottom-4 left-4 flex items-center z-40 transition-all duration-300">
-                <div id="player-avatar-btn" class="w-16 h-16 rounded-full border-4 border-white shadow-2xl overflow-hidden cursor-pointer hover:scale-105 transition-transform bg-gray-300"></div>
-                <div id="player-details" class="ml-3 bg-white/90 backdrop-blur-md p-3 pr-4 rounded-2xl shadow-xl flex items-center transition-all origin-left scale-0 opacity-0 pointer-events-none">
-                    <div><div id="info-name" class="font-bold text-gray-800"></div><div class="text-sm text-blue-600 font-bold"><span data-lang="scorePrefix">分數: </span><span id="info-score">0</span></div></div>
-                    <button id="edit-btn" class="ml-4 p-2 text-gray-400 hover:text-blue-500 pointer-events-auto" title="編輯">✏️</button>
+            <div id="player-info-bar"
+                class="ui-element absolute bottom-4 left-4 flex items-center z-40 transition-all duration-300">
+                <div id="player-avatar-btn"
+                    class="w-16 h-16 rounded-full border-4 border-white shadow-2xl overflow-hidden cursor-pointer hover:scale-105 transition-transform bg-gray-300">
+                </div>
+                <div id="player-details"
+                    class="ml-3 bg-white/90 backdrop-blur-md p-3 pr-4 rounded-2xl shadow-xl flex items-center transition-all origin-left scale-0 opacity-0 pointer-events-none">
+                    <div>
+                        <div id="info-name" class="font-bold text-gray-800"></div>
+                        <div class="text-sm text-blue-600 font-bold"><span data-lang="scorePrefix">分數: </span><span
+                                id="info-score">0</span></div>
+                    </div>
+                    <button id="edit-btn" class="ml-4 p-2 text-gray-400 hover:text-blue-500 pointer-events-auto"
+                        title="編輯">✏️</button>
                 </div>
             </div>
             <div id="guide-panel" class="ui-element absolute bottom-4 right-4 flex flex-col items-end z-40">
-                <div id="guide-bubble" class="bg-white/95 backdrop-blur-md p-4 rounded-2xl rounded-br-none shadow-2xl mb-2 max-w-[250px] text-sm font-bold text-gray-800 hidden transition-all"></div>
-                <img id="guide-img" class="w-24 h-auto filter drop-shadow-lg cursor-pointer hover:scale-105 transition-transform active:scale-95" alt="Guide">
+                <div id="guide-bubble"
+                    class="bg-white/95 backdrop-blur-md p-4 rounded-2xl rounded-br-none shadow-2xl mb-2 max-w-[250px] text-sm font-bold text-gray-800 hidden transition-all">
+                </div>
+                <img id="guide-img"
+                    class="w-24 h-auto filter drop-shadow-lg cursor-pointer hover:scale-105 transition-transform active:scale-95"
+                    alt="Guide">
             </div>
             <div class="ui-element absolute bottom-8 left-1/2 -translate-x-1/2 z-40">
-                <button id="dice-btn" class="dice-btn bg-gradient-to-b from-yellow-400 to-orange-500 text-white w-24 h-24 rounded-full border-4 border-white shadow-[0_10px_30px_rgba(245,158,11,0.5)] flex items-center justify-center text-5xl hover:scale-110 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">🎲</button>
+                <button id="dice-btn"
+                    class="dice-btn bg-gradient-to-b from-yellow-400 to-orange-500 text-white w-24 h-24 rounded-full border-4 border-white shadow-[0_10px_30px_rgba(245,158,11,0.5)] flex items-center justify-center text-5xl hover:scale-110 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">🎲</button>
             </div>
-            <div id="zoom-controls" class="ui-element absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-2 z-40">
-                <button id="zoom-in" class="w-12 h-12 bg-white/80 backdrop-blur text-2xl font-bold rounded-full shadow-lg hover:bg-white active:scale-95">+</button>
-                <button id="zoom-out" class="w-12 h-12 bg-white/80 backdrop-blur text-2xl font-bold rounded-full shadow-lg hover:bg-white active:scale-95">-</button>
-                <button id="zoom-reset" class="w-12 h-12 bg-white/80 backdrop-blur text-lg rounded-full shadow-lg hover:bg-white active:scale-95">⟲</button>
+            <div id="zoom-controls"
+                class="ui-element absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-2 z-40">
+                <button id="zoom-in"
+                    class="w-12 h-12 bg-white/80 backdrop-blur text-2xl font-bold rounded-full shadow-lg hover:bg-white active:scale-95">+</button>
+                <button id="zoom-out"
+                    class="w-12 h-12 bg-white/80 backdrop-blur text-2xl font-bold rounded-full shadow-lg hover:bg-white active:scale-95">-</button>
+                <button id="zoom-reset"
+                    class="w-12 h-12 bg-white/80 backdrop-blur text-lg rounded-full shadow-lg hover:bg-white active:scale-95">⟲</button>
             </div>
         </div>
     </div>
 
     <!-- PART 3: 模態彈窗 -->
-    <div id="start-modal" class="fixed inset-0 bg-black/60 flex justify-center items-center z-[60] hidden backdrop-blur-sm p-4">
+    <div id="start-modal"
+        class="fixed inset-0 bg-black/60 flex justify-center items-center z-[60] hidden backdrop-blur-sm p-4">
         <div class="bg-white p-6 md:p-8 rounded-[2rem] shadow-2xl w-full max-w-lg modal-container">
             <h2 class="text-3xl font-extrabold text-center text-blue-600 mb-6" data-lang="startTitle">建立你的角色</h2>
-            <div class="mb-6"><label class="block text-sm font-bold text-gray-700 mb-2" data-lang="labelNickname">冒險暱稱</label><div class="flex"><input type="text" id="nickname-input" class="flex-grow px-4 py-3 border-2 border-gray-200 rounded-l-xl focus:border-blue-500 outline-none text-lg"><button id="reroll-btn" class="bg-gray-100 px-4 text-xl border-2 border-l-0 border-gray-200 rounded-r-xl hover:bg-gray-200">🔄</button></div></div>
-            <div class="mb-8"><p class="block text-sm font-bold text-gray-700 mb-3" data-lang="labelAvatar">選擇頭像</p><div id="avatar-grid" class="flex flex-wrap justify-center gap-4"></div></div>
-            <div class="flex gap-3"><button id="cancel-edit-btn" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-4 rounded-xl hidden" data-lang="btnCancel">取消</button><button id="start-confirm-btn" class="flex-[2] bg-blue-600 hover:bg-blue-700 text-white text-xl font-bold py-4 rounded-xl shadow-lg" data-lang="btnConfirm">確認</button></div>
+            <div class="mb-6"><label class="block text-sm font-bold text-gray-700 mb-2"
+                    data-lang="labelNickname">冒險暱稱</label>
+                <div class="flex"><input type="text" id="nickname-input"
+                        class="flex-grow px-4 py-3 border-2 border-gray-200 rounded-l-xl focus:border-blue-500 outline-none text-lg"><button
+                        id="reroll-btn"
+                        class="bg-gray-100 px-4 text-xl border-2 border-l-0 border-gray-200 rounded-r-xl hover:bg-gray-200">🔄</button>
+                </div>
+            </div>
+            <div class="mb-8">
+                <p class="block text-sm font-bold text-gray-700 mb-3" data-lang="labelAvatar">選擇頭像</p>
+                <div id="avatar-grid" class="flex flex-wrap justify-center gap-4"></div>
+            </div>
+            <div class="flex gap-3"><button id="cancel-edit-btn"
+                    class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-4 rounded-xl hidden"
+                    data-lang="btnCancel">取消</button><button id="start-confirm-btn"
+                    class="flex-[2] bg-blue-600 hover:bg-blue-700 text-white text-xl font-bold py-4 rounded-xl shadow-lg"
+                    data-lang="btnConfirm">確認</button></div>
         </div>
     </div>
-    <div id="qa-modal" class="fixed inset-0 bg-black/60 flex justify-center items-center z-[70] hidden backdrop-blur-sm p-4">
-        <div class="bg-white p-6 md:p-8 rounded-[2rem] shadow-2xl w-full max-w-2xl modal-container transition-all scale-100">
-            <div class="text-center mb-6"><span id="qa-city" class="inline-block bg-blue-100 text-blue-800 px-4 py-1 rounded-full font-bold mb-3"></span><h3 id="qa-text" class="text-2xl font-bold text-gray-800 leading-relaxed"></h3></div>
+    <div id="qa-modal"
+        class="fixed inset-0 bg-black/60 flex justify-center items-center z-[70] hidden backdrop-blur-sm p-4">
+        <div
+            class="bg-white p-6 md:p-8 rounded-[2rem] shadow-2xl w-full max-w-2xl modal-container transition-all scale-100">
+            <div class="text-center mb-6"><span id="qa-city"
+                    class="inline-block bg-blue-100 text-blue-800 px-4 py-1 rounded-full font-bold mb-3"></span>
+                <h3 id="qa-text" class="text-2xl font-bold text-gray-800 leading-relaxed"></h3>
+            </div>
             <div id="qa-options" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4"></div>
             <div id="qa-feedback" class="text-center text-lg font-bold h-8"></div>
-            <button id="qa-close-btn" class="w-full mt-4 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-3 rounded-xl hidden" data-lang="reviewCloseBtn">關閉複習</button>
+            <button id="qa-close-btn"
+                class="w-full mt-4 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-3 rounded-xl hidden"
+                data-lang="reviewCloseBtn">關閉複習</button>
         </div>
     </div>
-    <div id="end-modal" class="fixed inset-0 bg-black/80 flex justify-center items-center z-[80] hidden backdrop-blur-md p-4">
+    <div id="end-modal"
+        class="fixed inset-0 bg-black/80 flex justify-center items-center z-[80] hidden backdrop-blur-md p-4">
         <div class="bg-white p-8 md:p-10 rounded-[2.5rem] shadow-2xl w-full max-w-md text-center modal-container">
-            <h2 class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 mb-4" data-lang="endTitle">🎉 恭喜通關！</h2>
+            <h2 class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 mb-4"
+                data-lang="endTitle">🎉 恭喜通關！</h2>
             <p id="end-msg" class="text-lg text-gray-600 mb-8"></p>
-            <div class="bg-gray-50 p-6 rounded-2xl mb-8 flex justify-around"><div><div class="text-gray-500 text-sm" data-lang="labelTotal">總題數</div><div id="end-total" class="font-bold text-2xl">0</div></div><div><div class="text-gray-500 text-sm" data-lang="labelCorrect">答對</div><div id="end-correct" class="font-bold text-2xl text-green-600">0</div></div></div>
-            <button id="end-review-btn" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white text-xl font-bold py-4 rounded-2xl shadow-lg pulse-glow" data-lang="btnReviewMode">👀 進入複習模式</button>
+            <div class="bg-gray-50 p-6 rounded-2xl mb-8 flex justify-around">
+                <div>
+                    <div class="text-gray-500 text-sm" data-lang="labelTotal">總題數</div>
+                    <div id="end-total" class="font-bold text-2xl">0</div>
+                </div>
+                <div>
+                    <div class="text-gray-500 text-sm" data-lang="labelCorrect">答對</div>
+                    <div id="end-correct" class="font-bold text-2xl text-green-600">0</div>
+                </div>
+            </div>
+            <button id="end-review-btn"
+                class="w-full bg-yellow-500 hover:bg-yellow-600 text-white text-xl font-bold py-4 rounded-2xl shadow-lg pulse-glow"
+                data-lang="btnReviewMode">👀 進入複習模式</button>
         </div>
     </div>
     <div id="settings-modal" class="fixed inset-0 bg-black/50 flex justify-center items-center z-[90] hidden p-4">
         <div class="bg-white p-8 rounded-[2rem] shadow-2xl w-full max-w-sm modal-container">
             <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center" data-lang="settingsTitle">設定</h2>
             <div class="space-y-6 mb-8">
-                <div><div class="flex justify-between mb-2"><label class="font-bold" data-lang="labelMusic">🎵 音樂</label><span id="vol-bgm-val" class="text-sm text-gray-500">50%</span></div><input type="range" id="vol-bgm" min="0" max="1" step="0.1" class="w-full"></div>
-                <div><div class="flex justify-between mb-2"><label class="font-bold" data-lang="labelSound">🔊 音效</label><span id="vol-sfx-val" class="text-sm text-gray-500">80%</span></div><input type="range" id="vol-sfx" min="0" max="1" step="0.1" class="w-full"></div>
+                <div>
+                    <div class="flex justify-between mb-2"><label class="font-bold" data-lang="labelMusic">🎵
+                            音樂</label><span id="vol-bgm-val" class="text-sm text-gray-500">50%</span></div><input
+                        type="range" id="vol-bgm" min="0" max="1" step="0.1" class="w-full">
+                </div>
+                <div>
+                    <div class="flex justify-between mb-2"><label class="font-bold" data-lang="labelSound">🔊
+                            音效</label><span id="vol-sfx-val" class="text-sm text-gray-500">80%</span></div><input
+                        type="range" id="vol-sfx" min="0" max="1" step="0.1" class="w-full">
+                </div>
             </div>
             <div class="space-y-3 pt-6 border-t border-gray-200">
-                <button id="soft-reset-btn" class="w-full bg-yellow-100 hover:bg-yellow-200 text-yellow-800 font-bold py-3 rounded-xl" data-lang="btnSoftReset">🔄 重玩本局 (保留紀錄)</button>
-                <button id="hard-reset-btn" class="w-full bg-red-100 hover:bg-red-200 text-red-800 font-bold py-3 rounded-xl" data-lang="btnHardReset">🚪 完全登出</button>
-                <button id="back-menu-btn" class="w-full bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 rounded-xl flex items-center justify-center" data-lang="btnBackMenu">🏠 回主選單</button>
+                <button id="soft-reset-btn"
+                    class="w-full bg-yellow-100 hover:bg-yellow-200 text-yellow-800 font-bold py-3 rounded-xl"
+                    data-lang="btnSoftReset">🔄 重玩本局 (保留紀錄)</button>
+                <button id="hard-reset-btn"
+                    class="w-full bg-red-100 hover:bg-red-200 text-red-800 font-bold py-3 rounded-xl"
+                    data-lang="btnHardReset">🚪 完全登出</button>
+                <button id="back-menu-btn"
+                    class="w-full bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 rounded-xl flex items-center justify-center"
+                    data-lang="btnBackMenu">🏠 回主選單</button>
             </div>
-            <button id="settings-close-btn" class="w-full mt-6 bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 rounded-xl" data-lang="btnClose">關閉</button>
+            <button id="settings-close-btn"
+                class="w-full mt-6 bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 rounded-xl"
+                data-lang="btnClose">關閉</button>
         </div>
     </div>
     <div id="custom-modal" class="fixed inset-0 bg-black/50 flex justify-center items-center z-[100] hidden p-4">
-        <div class="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-sm text-center transform scale-95 opacity-0 transition-all" id="custom-modal-content">
+        <div class="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-sm text-center transform scale-95 opacity-0 transition-all"
+            id="custom-modal-content">
             <h3 id="custom-modal-title" class="text-xl font-bold text-gray-900 mb-2"></h3>
             <p id="custom-modal-msg" class="text-gray-600 mb-6"></p>
             <div class="flex gap-3" id="custom-modal-actions">
-                <button id="custom-modal-cancel" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 rounded-xl hidden" data-lang="btnCancel">取消</button>
-                <button id="custom-modal-confirm" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl" data-lang="btnConfirm">確認</button>
+                <button id="custom-modal-cancel"
+                    class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 rounded-xl hidden"
+                    data-lang="btnCancel">取消</button>
+                <button id="custom-modal-confirm"
+                    class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl"
+                    data-lang="btnConfirm">確認</button>
             </div>
         </div>
     </div>
-    <div id="nickname-tooltip" class="fixed bg-black/80 text-white text-sm px-3 py-1.5 rounded-lg pointer-events-none z-[110] hidden transition-opacity"></div>
+    <div id="nickname-tooltip"
+        class="fixed bg-black/80 text-white text-sm px-3 py-1.5 rounded-lg pointer-events-none z-[110] hidden transition-opacity">
+    </div>
 
     <!-- PART 4: 核心腳本 -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { getDatabase, ref, update, onValue, onDisconnect, serverTimestamp, remove, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-
-        let CURRENT_THEME_ID = null, CURRENT_THEME_CONFIG = null;
-        let db, auth, userId, playerRef, playersRef;
-        let gameData = { map: [], questions: {} }, allPlayersData = {};
-        let gameState = { nickname: null, avatar: null, currentSquare: 0, score: 0, squareStates: {}, gameCompleted: false, isAnswering: false, audio: { bgm: 0.5, sfx: 0.8 } };
-        let audioCtx, bgmNode, sfxNode, audioBuffers = {}, bgmSource = null;
-        let mapScale = 1, mapX = 0, mapY = 0, stageW = 0, stageH = 0;
-
-        const $ = (id) => document.getElementById(id);
-        const dom = {
-            root: $('game-engine-root'), selector: $('theme-selector'), loading: $('loading-screen'),
-            stage: $('game-stage'), mapBg: $('map-bg'), squaresLayer: $('board-squares-layer'), playersLayer: $('players-layer'),
-            guideBubble: $('guide-bubble'), guideImg: $('guide-img'), diceBtn: $('dice-btn'),
-            pInfoBar: $('player-info-bar'), pAvatarBtn: $('player-avatar-btn'), pDetails: $('player-details'), pName: $('info-name'), pScore: $('info-score'), pEditBtn: $('edit-btn'),
-            lbPanel: $('leaderboard-panel'), lbToggle: $('leaderboard-toggle'), lbContent: $('leaderboard-content'), lbList: $('leaderboard-list'), tabLive: $('tab-live'), tabHistory: $('tab-history'), lbIcon: $('lb-icon'),
-            startModal: $('start-modal'), nickInput: $('nickname-input'), rerollBtn: $('reroll-btn'), avatarGrid: $('avatar-grid'), startConfirm: $('start-confirm-btn'), cancelEditBtn: $('cancel-edit-btn'),
-            qaModal: $('qa-modal'), qaCity: $('qa-city'), qaText: $('qa-text'), qaOpts: $('qa-options'), qaFeedback: $('qa-feedback'), qaCloseBtn: $('qa-close-btn'),
-            endModal: $('end-modal'), endMsg: $('end-msg'), endTotal: $('end-total'), endCorrect: $('end-correct'), endReviewBtn: $('end-review-btn'),
-            setModal: $('settings-modal'), setBtn: $('settings-btn'), setCloseBtn: $('settings-close-btn'), volBgm: $('vol-bgm'), volSfx: $('vol-sfx'), softReset: $('soft-reset-btn'), hardReset: $('hard-reset-btn'), backMenuBtn: $('back-menu-btn'),
-            zoomIn: $('zoom-in'), zoomOut: $('zoom-out'), zoomReset: $('zoom-reset'), tooltip: $('nickname-tooltip')
-        };
-
-        // 新增：套用翻譯
-        function applyTranslations() {
-            if (typeof UI_TEXT === 'undefined') return;
-            document.querySelectorAll('[data-lang]').forEach(el => {
-                const key = el.getAttribute('data-lang');
-                if (UI_TEXT[key]) el.textContent = UI_TEXT[key];
-            });
-            document.title = UI_TEXT.appTitle;
-        }
-
-        (async function initApp() {
-            applyTranslations(); // 遊戲啟動時套用翻譯
-            const urlParams = new URLSearchParams(window.location.search);
-            CURRENT_THEME_ID = urlParams.get('theme');
-            if (!CURRENT_THEME_ID) initThemeSelector();
-            else {
-                try { await loadTheme(CURRENT_THEME_ID); startGameEngine(); }
-                catch (e) { 
-                    // 使用 UI_TEXT
-                    alert(`${UI_TEXT.errThemeLoad}${e.message}\n${UI_TEXT.errThemeFile.replace('{id}', CURRENT_THEME_ID)}`); 
-                    window.location.search = ''; 
-                }
-            }
-        })();
-
-        function initThemeSelector() {
-            dom.selector.classList.remove('hidden');
-            const script = document.createElement('script'); script.src = './modules/theme_list.js';
-            script.onload = () => {
-                const list = window.AVAILABLE_THEMES || [];
-                const container = $('theme-list'); container.innerHTML = '';
-                if (list.length === 0) { container.innerHTML = `<div class="col-span-full text-center text-gray-500 font-bold">${UI_TEXT.themeNoData}</div>`; return; }
-                list.forEach(t => {
-                    const card = document.createElement('div');
-                    card.className = "bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all cursor-pointer transform hover:-translate-y-2 flex flex-col overflow-hidden border border-gray-100 w-full sm:w-80 lg:w-96 group";
-                    card.innerHTML = `
-                        <div class="relative h-56 overflow-hidden bg-gray-200">
-                            <img src="modules/${t.id}/${t.cover}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><rect width=%22100%25%22 height=%22100%25%22 fill=%22%23eee%22/><text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%23aaa%22>No Image</text></svg>'">
-                        </div>
-                        <div class="p-6">
-                            <h3 class="text-2xl font-bold text-gray-800 mb-2 group-hover:text-blue-600 transition-colors">${t.name}</h3>
-                            <p class="text-gray-600 text-base leading-relaxed whitespace-pre-line">${t.description}</p>
-                        </div>
-                    `;
-                    card.onclick = () => window.location.search = `?theme=${t.id}`; container.appendChild(card);
-                });
-            };
-            script.onerror = () => $('theme-list').innerHTML = `<div class="col-span-full text-center text-red-500 font-bold">${UI_TEXT.themeReadError}</div>`;
-            document.body.appendChild(script);
-        }
-
-        function loadTheme(id) {
-            return new Promise((resolve, reject) => {
-                const script = document.createElement('script'); script.src = `./modules/${id}/theme.js`;
-                script.onload = () => {
-                    if (window.CURRENT_THEME_CONFIG) { 
-                        CURRENT_THEME_CONFIG = window.CURRENT_THEME_CONFIG; 
-                        fixPaths(CURRENT_THEME_CONFIG.ASSETS, id); 
-                        if (typeof DEFAULT_SFX !== 'undefined') {
-                            CURRENT_THEME_CONFIG.ASSETS.SFX = { ...DEFAULT_SFX, ...CURRENT_THEME_CONFIG.ASSETS.SFX };
-                        }
-                        resolve(); 
-                    }
-                    else reject(new Error(UI_TEXT.errConfig));
-                };
-                script.onerror = () => reject(new Error(UI_TEXT.errThemeFile));
-                document.head.appendChild(script);
-            });
-        }
-        function fixPaths(assets, id) {
-            const prefix = `modules/${id}/`;
-            for (let k in assets.AVATARS) assets.AVATARS[k] = prefix + assets.AVATARS[k];
-            for (let k in assets.IMAGES) assets.IMAGES[k] = prefix + assets.IMAGES[k];
-            for (let k in assets.SFX) { if(Array.isArray(assets.SFX[k])) assets.SFX[k] = assets.SFX[k].map(p => prefix + p); else assets.SFX[k] = prefix + assets.SFX[k]; }
-        }
-
-        async function startGameEngine() {
-            dom.selector.classList.add('hidden'); dom.root.classList.remove('hidden');
-            dom.loading.querySelector('img').src = CURRENT_THEME_CONFIG.ASSETS.IMAGES.loadingGif;
-            
-            dom.mapBg.onload = () => initMapStage();
-            dom.mapBg.src = CURRENT_THEME_CONFIG.ASSETS.IMAGES.mapBg;
-            dom.guideImg.src = CURRENT_THEME_CONFIG.ASSETS.IMAGES.guideNPC;
-
-            loadLocalState(); initAudioCtx(); initFirebase(); setupEventListeners();
-            await fetchGameData();
-            
-            initMapStage();
-
-            if (gameState.nickname && !gameState.isAnswering) { enterGame(); }
-            else {
-                if (gameState.nickname && gameState.isAnswering) enterGame();
-                else { dom.loading.classList.add('hidden'); showStartModal(false); }
-            }
-        }
-
-        function initFirebase() {
-            if(typeof FIREBASE_CONFIG === 'undefined') return alert(UI_TEXT.errFirebase);
-            const app = initializeApp(FIREBASE_CONFIG); db = getDatabase(app); auth = getAuth(app);
-            onAuthStateChanged(auth, user => {
-                if(user) {
-                    userId = user.uid; const basePath = `theme_data/${CURRENT_THEME_ID}/players`;
-                    playerRef = ref(db, `${basePath}/${userId}`); playersRef = ref(db, basePath);
-                    setupFirebaseListeners(); if(gameState.nickname) syncFirebase();
-                }
-            });
-            signInAnonymously(auth).catch(e => console.error("Firebase 登入失敗", e));
-        }
-        function setupFirebaseListeners() {
-            onValue(playersRef, snap => { allPlayersData = snap.val() || {}; if(gameState.nickname) { drawShadows(); updateLeaderboard(); } });
-        }
-        function syncFirebase() {
-            if(!playerRef || !gameState.nickname) return;
-            update(playerRef, { nickname: gameState.nickname, avatar: gameState.avatar, currentSquare: gameState.currentSquare, currentScore: gameState.score, isOnline: true, lastSeen: serverTimestamp() });
-            onDisconnect(playerRef).update({ isOnline: false });
-        }
-        async function fetchGameData() {
-            try {
-                const res = await fetch(CURRENT_THEME_CONFIG.GAS_URL); const data = await res.json();
-                if(data.error) throw new Error(data.error); gameData = data;
-            } catch(e) { alert(UI_TEXT.errGas + e.message); }
-        }
-
-        function initAudioCtx() {
-            window.AudioContext = window.AudioContext || window.webkitAudioContext; audioCtx = new AudioContext();
-            bgmNode = audioCtx.createGain(); sfxNode = audioCtx.createGain();
-            bgmNode.connect(audioCtx.destination); sfxNode.connect(audioCtx.destination); updateVolumes();
-            for(let k in CURRENT_THEME_CONFIG.ASSETS.SFX) {
-                const urls = CURRENT_THEME_CONFIG.ASSETS.SFX[k];
-                if(Array.isArray(urls)) urls.forEach(url => loadAudio(k, url)); else loadAudio(k, urls);
-            }
-        }
-        async function loadAudio(key, url) {
-            try {
-                const res = await fetch(url); const buf = await res.arrayBuffer(); const decoded = await audioCtx.decodeAudioData(buf);
-                if(!audioBuffers[key]) audioBuffers[key] = []; audioBuffers[key].push(decoded);
-            } catch(e) { console.warn("音效載入失敗", url); }
-        }
-        function playSfx(key) {
-            if(!audioCtx || !audioBuffers[key] || audioBuffers[key].length===0) return;
-            if(audioCtx.state === 'suspended') audioCtx.resume();
-            const src = audioCtx.createBufferSource(); src.buffer = audioBuffers[key][Math.floor(Math.random()*audioBuffers[key].length)];
-            src.connect(sfxNode); src.start(0);
-        }
-        function playBgm() {
-             if(!audioCtx || !audioBuffers['bgm'] || bgmSource) return;
-             bgmSource = audioCtx.createBufferSource(); bgmSource.buffer = audioBuffers['bgm'][0];
-             bgmSource.loop = true; bgmSource.connect(bgmNode); bgmSource.start(0);
-        }
-        function updateVolumes() {
-            if(bgmNode) bgmNode.gain.value = gameState.audio.bgm; if(sfxNode) sfxNode.gain.value = gameState.audio.sfx;
-            dom.volBgm.style.backgroundSize = `${gameState.audio.bgm*100}% 100%`; dom.volSfx.style.backgroundSize = `${gameState.audio.sfx*100}% 100%`;
-        }
-
-        function enterGame() {
-            dom.loading.classList.add('hidden'); playBgm(); syncFirebase();
-            drawBoard(); updatePlayerInfo(); drawPlayer();
-            if(gameState.isAnswering) triggerQuestion(gameState.currentSquare);
-            else showGuide(CURRENT_THEME_CONFIG.ASSETS.TEXT.NPC_WELCOME);
-        }
-        async function rollDice() {
-            if(gameState.gameCompleted || gameState.isAnswering) return;
-            dom.diceBtn.disabled = true; playSfx('dice');
-            const diceAnim = document.createElement('div'); diceAnim.className = 'dice-anim'; dom.root.appendChild(diceAnim);
-            let steps = 1;
-            for(let i=0; i<10; i++) { steps = Math.floor(Math.random()*6)+1; diceAnim.textContent = steps; await new Promise(r => setTimeout(r, 80)); }
-            await new Promise(r => setTimeout(r, 500)); diceAnim.remove();
-            movePlayer(steps);
-        }
-        async function movePlayer(steps) {
-            let curr = gameState.currentSquare, total = CURRENT_THEME_CONFIG.BOARD_COORDINATES.length;
-            let target = (curr + steps) % total;
-            for(let i=1; i<=steps; i++) {
-                let idx = (curr + i)%total;
-                if(gameData.map[idx]?.isMustHit && gameData.map[idx]?.isVisible!==false) { target = idx; break; }
-            }
-            dom.playersLayer.querySelector('.player-piece')?.classList.add('moving');
-            while(curr !== target) {
-                curr = (curr+1)%total; if(gameData.map[curr]?.isVisible===false) continue;
-                gameState.currentSquare = curr; drawPlayer(); playSfx('move'); await new Promise(r => setTimeout(r, 300));
-            }
-            dom.playersLayer.querySelector('.player-piece')?.classList.remove('moving');
-            saveState(); syncFirebase(); dom.diceBtn.disabled = false;
-            checkSquare(target);
-        }
-        function checkSquare(idx) {
-            const status = gameState.squareStates[idx]?.status;
-            if(status === 'success' || status === 'failed' || gameData.map[idx]?.isVisible===false) setTimeout(() => movePlayer(1), 500);
-            else triggerQuestion(idx);
-        }
-        function triggerQuestion(idx) {
-            const mapItem = gameData.map[idx]; if(!mapItem) return movePlayer(1);
-            const q = gameData.questions[mapItem.questionId]; if(!q) return movePlayer(1);
-            gameState.isAnswering = true; saveState();
-            dom.qaCity.textContent = mapItem.city; dom.qaText.textContent = q.text; dom.qaFeedback.textContent = ''; dom.qaCloseBtn.classList.add('hidden');
-            dom.qaOpts.innerHTML = '';
-            const opts = q.options.map((t,i) => ({t, idx:i+1})).sort(() => Math.random()-0.5);
-            opts.forEach(o => {
-                const btn = document.createElement('button');
-                btn.className = "w-full p-4 bg-blue-50 hover:bg-blue-100 text-blue-900 font-bold rounded-xl border-2 border-blue-200 text-lg text-left transition-all active:scale-95";
-                btn.textContent = o.t; btn.onclick = () => handleAnswer(idx, o.idx, q.answer); dom.qaOpts.appendChild(btn);
-            });
-            dom.qaModal.classList.remove('hidden');
-        }
-        function handleAnswer(idx, selected, correct) {
-            gameState.isAnswering = false;
-            const isCorrect = (selected === correct), is2nd = gameState.squareStates[idx]?.isSecondTry;
-            gameState.squareStates[idx] = { ...gameState.squareStates[idx], selectedOption: selected };
-            Array.from(dom.qaOpts.children).forEach(b => b.disabled = true);
-            if(isCorrect) {
-                playSfx('success'); dom.qaFeedback.textContent = UI_TEXT.feedbackCorrect; dom.qaFeedback.className = "text-center text-lg font-bold h-8 text-green-600";
-                gameState.score++; gameState.squareStates[idx].status = 'success'; setTimeout(closeQA, 1500);
-            } else {
-                playSfx('fail'); dom.qaFeedback.textContent = UI_TEXT.feedbackWrong; dom.qaFeedback.className = "text-center text-lg font-bold h-8 text-red-600";
-                if(!is2nd) {
-                    gameState.squareStates[idx].isSecondTry = true;
-                    setTimeout(() => { dom.qaFeedback.textContent = UI_TEXT.feedbackRetry; Array.from(dom.qaOpts.children).forEach(b => b.disabled = false); }, 1000);
-                } else {
-                    gameState.squareStates[idx].status = 'failed';
-                    const opts = gameData.questions[gameData.map[idx].questionId].options;
-                    let visualCorrectIdx = -1;
-                    Array.from(dom.qaOpts.children).forEach((btn, i) => { if(btn.textContent === opts[correct-1]) { btn.classList.add('bg-green-200', 'border-green-500'); visualCorrectIdx = i + 1; } });
-                    showGuide(UI_TEXT.feedbackCorrectIs.replace('{n}', visualCorrectIdx)); setTimeout(closeQA, 2500);
-                }
-            }
-            saveState(); updatePlayerInfo();
-        }
-        function closeQA() { dom.qaModal.classList.add('hidden'); drawBoard(); syncFirebase(); checkForEnd(); }
-        function checkForEnd() {
-            if(gameState.gameCompleted) return;
-            const total = CURRENT_THEME_CONFIG.BOARD_COORDINATES.length; let answered = 0, visible = 0;
-            for(let i=0; i<total; i++) { if(gameData.map[i]?.isVisible!==false) { visible++; if(gameState.squareStates[i]?.status) answered++; } }
-            if(answered === visible && visible > 0) {
-                playSfx('complete'); gameState.gameCompleted = true; saveState();
-                if(playerRef) get(playerRef).then(snap => { const high = snap.val()?.highScore || 0; if(gameState.score > high) update(playerRef, { highScore: gameState.score }); });
-                dom.endMsg.textContent = UI_TEXT.endMsg.replace('{name}', gameState.nickname); dom.endTotal.textContent = visible; dom.endCorrect.textContent = gameState.score; dom.endModal.classList.remove('hidden');
-            }
-        }
-
-        function initMapStage() {
-            const recenter = () => {
-                const cW = dom.stage.parentElement.offsetWidth, cH = dom.stage.parentElement.offsetHeight;
-                const iW = dom.mapBg.naturalWidth || 1024, iH = dom.mapBg.naturalHeight || 1366;
-                stageW = iW; stageH = iH; // Store raw dimensions
-                const scale = Math.min(cW/iW, cH/iH) * 0.95;
-                dom.stage.style.width = iW + 'px'; dom.stage.style.height = iH + 'px';
-                mapScale = scale; mapX = (cW - iW * scale) / 2; mapY = (cH - iH * scale) / 2;
-                updateMapTransform();
-            };
-            recenter();
-            new ResizeObserver(recenter).observe(dom.stage.parentElement);
-        }
-        function updateMapTransform() { dom.stage.style.transform = `translate(${mapX}px, ${mapY}px) scale(${mapScale})`; }
-        function drawBoard() {
-            dom.squaresLayer.innerHTML = '';
-            CURRENT_THEME_CONFIG.BOARD_COORDINATES.forEach((c, i) => {
-                if(gameData.map[i]?.isVisible===false) return;
-                const sq = document.createElement('div');
-                sq.className = `game-square ${gameData.map[i]?.isMustHit ? 'must-hit' : ''}`;
-                sq.style.top = c.top; sq.style.left = c.left;
-                sq.innerHTML = `<span>${gameData.map[i]?.city || (i + 1)}</span>`;
-                const st = gameState.squareStates[i]?.status;
-                if(st==='success') sq.classList.add('square-success'); else if(st==='failed') sq.classList.add('square-failed');
-                sq.onclick = () => { if(gameState.gameCompleted) showReview(i); };
-                dom.squaresLayer.appendChild(sq);
-            });
-        }
-        function drawPlayer() {
-            let p = dom.playersLayer.querySelector('#p-self');
-            if(!p) { p = document.createElement('div'); p.id = 'p-self'; p.className = 'player-piece'; dom.playersLayer.appendChild(p); }
-            p.innerHTML = `<img src="${CURRENT_THEME_CONFIG.ASSETS.AVATARS[gameState.avatar]}">`;
-            const c = CURRENT_THEME_CONFIG.BOARD_COORDINATES[gameState.currentSquare]; if(c) { p.style.top = c.top; p.style.left = c.left; }
-        }
-        function drawShadows() {
-            dom.playersLayer.querySelectorAll('.shadow-avatar').forEach(e => e.remove());
-            for(let pid in allPlayersData) {
-                if(pid === userId || !allPlayersData[pid].isOnline) continue;
-                const p = allPlayersData[pid], c = CURRENT_THEME_CONFIG.BOARD_COORDINATES[p.currentSquare];
-                if(c) {
-                    const s = document.createElement('div'); s.className = 'shadow-avatar'; s.style.top = c.top; s.style.left = c.left;
-                    const offsetX = (parseInt(pid.substr(0, 2), 36) % 20) - 10;
-                    s.style.transform = `translate(-50%, -50%) translate(${offsetX}px, 20px)`;
-                    s.innerHTML = `<img src="${CURRENT_THEME_CONFIG.ASSETS.AVATARS[p.avatar] || './avatar_bear.png'}" onerror="this.src='./avatar_bear.png'">`;
-                    s.onclick = (e) => { e.stopPropagation(); showTooltip(e, p.nickname); };
-                    dom.playersLayer.appendChild(s);
-                }
-            }
-        }
-        function showGuide(text) {
-            if(dom.guideBubble.dataset.busy === 'true') return;
-            dom.guideBubble.textContent = text; dom.guideBubble.classList.remove('hidden', 'opacity-0'); dom.guideBubble.classList.add('opacity-100');
-            clearTimeout(dom.guideBubble.timer); dom.guideBubble.timer = setTimeout(() => { dom.guideBubble.classList.remove('opacity-100'); dom.guideBubble.classList.add('opacity-0'); setTimeout(() => dom.guideBubble.classList.add('hidden'), 300); }, 4000);
-        }
-
-        function showStartModal(isEdit) {
-            dom.nickInput.value = isEdit ? gameState.nickname : getRandomNickname(); renderAvatars();
-            dom.cancelEditBtn.classList.toggle('hidden', !isEdit); dom.startModal.classList.remove('hidden');
-            dom.startConfirm.onclick = () => {
-                const name = dom.nickInput.value.trim();
-                if(!name) return showAlert(UI_TEXT.alertNickname, null, null, () => {}); if(!gameState.avatar) return showAlert(UI_TEXT.alertAvatar, null, null, () => {});
-                gameState.nickname = name; saveState(); dom.startModal.classList.add('hidden');
-                if(!isEdit) enterGame(); else { updatePlayerInfo(); drawPlayer(); syncFirebase(); }
-            };
-            dom.cancelEditBtn.onclick = () => dom.startModal.classList.add('hidden');
-        }
-        function renderAvatars() {
-            dom.avatarGrid.innerHTML = '';
-            for(let k in CURRENT_THEME_CONFIG.ASSETS.AVATARS) {
-                const btn = document.createElement('button');
-                btn.className = `w-16 h-16 rounded-full p-0.5 ring-offset-2 transition-all ${gameState.avatar===k ? 'ring-4 ring-blue-500 scale-110' : 'ring-2 ring-transparent hover:scale-105'}`;
-                btn.innerHTML = `<img src="${CURRENT_THEME_CONFIG.ASSETS.AVATARS[k]}" class="w-full h-full object-cover rounded-full bg-gray-200">`;
-                btn.onclick = () => { playSfx('click'); gameState.avatar = k; renderAvatars(); };
-                dom.avatarGrid.appendChild(btn);
-            }
-        }
-        function updatePlayerInfo() {
-            dom.pName.textContent = gameState.nickname; dom.pScore.textContent = gameState.score;
-            dom.pAvatarBtn.innerHTML = `<img src="${CURRENT_THEME_CONFIG.ASSETS.AVATARS[gameState.avatar]}" class="w-full h-full object-cover">`;
-        }
-        let currentLbTab = 'live';
-        function updateLeaderboard() {
-            dom.lbList.innerHTML = '';
-            const list = Object.values(allPlayersData).filter(p => currentLbTab==='live' ? p.isOnline : (p.highScore != null))
-                .sort((a,b) => currentLbTab==='live' ? (b.currentScore||0)-(a.currentScore||0) : (b.highScore||0)-(a.highScore||0)).slice(0, 10);
-            list.forEach(p => {
-                const li = document.createElement('li'); li.className = `flex items-center p-1.5 rounded-lg ${p.nickname===gameState.nickname?'bg-blue-100':''}`;
-                li.innerHTML = `<img src="${CURRENT_THEME_CONFIG.ASSETS.AVATARS[p.avatar]}" class="w-6 h-6 rounded-full mr-2 border bg-gray-200"><span class="truncate flex-1 font-bold text-gray-700 cursor-pointer" title="${p.nickname}">${p.nickname}</span><span class="font-extrabold ${currentLbTab==='live'?'text-blue-600':'text-yellow-600'}">${currentLbTab==='live'?(p.currentScore||0):(p.highScore||0)}</span>`;
-                li.onclick = (e) => showTooltip(e, p.nickname); dom.lbList.appendChild(li);
-            });
-        }
-        function showTooltip(e, text) {
-            dom.tooltip.textContent = text; dom.tooltip.classList.remove('hidden'); dom.tooltip.style.opacity = 1;
-            const r = dom.tooltip.getBoundingClientRect(); let top = e.clientY - r.height - 10, left = e.clientX - r.width / 2;
-            if(top < 0) top = e.clientY + 20; if(left < 0) left = 0; if(left+r.width > window.innerWidth) left = window.innerWidth - r.width;
-            dom.tooltip.style.top = top+'px'; dom.tooltip.style.left = left+'px';
-            setTimeout(() => { dom.tooltip.style.opacity = 0; setTimeout(()=>dom.tooltip.classList.add('hidden'), 300); }, 2000);
-        }
-        function showReview(idx) {
-            const m = gameData.map[idx], q = gameData.questions[m.questionId], st = gameState.squareStates[idx];
-            dom.qaCity.textContent = m.city+UI_TEXT.reviewTitleSuffix; dom.qaText.textContent = q.text; dom.qaFeedback.textContent = ''; dom.qaCloseBtn.classList.remove('hidden');
-            dom.qaOpts.innerHTML = '';
-            q.options.forEach((opt, i) => {
-                const btn = document.createElement('div');
-                btn.className = `w-full p-3 rounded-xl border-2 text-lg font-bold mb-2 ${i+1===q.answer?'bg-green-100 border-green-500 text-green-900':(st?.selectedOption===i+1?'bg-red-100 border-red-500 text-red-900':'bg-gray-50 border-gray-200 text-gray-400')}`;
-                btn.textContent = opt + (i+1===q.answer?UI_TEXT.tagCorrect:(st?.selectedOption===i+1?UI_TEXT.tagWrong:''));
-                dom.qaOpts.appendChild(btn);
-            });
-            dom.qaModal.classList.remove('hidden');
-        }
-        function showAlert(title, msg, onConfirm, onCancel) {
-            $('custom-modal-title').textContent = title||'提示'; $('custom-modal-msg').textContent = msg;
-            $('custom-modal-confirm').onclick = () => { $('custom-modal').classList.add('hidden'); if(onConfirm) onConfirm(); };
-            $('custom-modal-cancel').onclick = () => { $('custom-modal').classList.add('hidden'); if(onCancel) onCancel(); };
-            $('custom-modal-cancel').classList.toggle('hidden', !onCancel);
-            $('custom-modal').classList.remove('hidden'); setTimeout(()=>$('custom-modal-content').classList.remove('scale-95','opacity-0'),10);
-        }
-
-        function loadLocalState() { const s = localStorage.getItem('TM_'+CURRENT_THEME_ID); if(s) gameState = { ...gameState, ...JSON.parse(s) }; }
-        function saveState() { localStorage.setItem('TM_'+CURRENT_THEME_ID, JSON.stringify(gameState)); }
-        function getRandomNickname() { const a = CURRENT_THEME_CONFIG.ASSETS.TEXT.MII_ADJECTIVES, n = CURRENT_THEME_CONFIG.ASSETS.TEXT.MII_NOUNS; return a[Math.floor(Math.random()*a.length)] + n[Math.floor(Math.random()*n.length)]; }
-        function setupEventListeners() {
-            document.addEventListener('click', e => { if(audioCtx && audioCtx.state==='suspended') audioCtx.resume(); if(e.target.tagName==='BUTTON' || e.target.closest('button') || e.target.classList.contains('game-square')) playSfx('click'); });
-            let isDragging = false, startX, startY, lastDist = 0; const isUI = (el) => el.closest('.ui-element') || el.closest('.modal-container');
-            dom.root.addEventListener('mousedown', e => { if(!isUI(e.target)) { isDragging=true; startX=e.clientX-mapX; startY=e.clientY-mapY; dom.stage.style.cursor='grabbing'; }});
-            window.addEventListener('mousemove', e => { if(isDragging) { mapX=e.clientX-startX; mapY=e.clientY-startY; constrainMap(); updateMapTransform(); }});
-            window.addEventListener('mouseup', () => { isDragging=false; dom.stage.style.cursor='grab'; });
-            dom.root.addEventListener('wheel', e => { if(!isUI(e.target)) { e.preventDefault(); zoomMap(e.deltaY > 0 ? 0.9 : 1.1, e.clientX, e.clientY); }}, {passive:false});
-            dom.root.addEventListener('dblclick', e => { if(!isUI(e.target)) zoomMap(mapScale>1.5 ? 1/mapScale*initScale() : 2, e.clientX, e.clientY); });
-            dom.root.addEventListener('touchstart', e => { if(isUI(e.target)) return; if(e.touches.length === 2) { lastDist = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY); } else if(e.touches.length === 1) { isDragging=true; startX=e.touches[0].clientX-mapX; startY=e.touches[0].clientY-mapY; } });
-            dom.root.addEventListener('touchmove', e => { if(e.touches.length === 2) { const dist = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY); zoomMap(dist/lastDist, (e.touches[0].clientX+e.touches[1].clientX)/2, (e.touches[0].clientY+e.touches[1].clientY)/2); lastDist = dist; } else if(isDragging && e.touches.length === 1) { mapX=e.touches[0].clientX-startX; mapY=e.touches[0].clientY-startY; constrainMap(); updateMapTransform(); } });
-            dom.root.addEventListener('touchend', () => isDragging=false);
-
-            dom.rerollBtn.onclick = () => dom.nickInput.value = getRandomNickname();
-            dom.pAvatarBtn.onclick = () => { const h = dom.pDetails.classList.contains('scale-0'); dom.pDetails.classList.toggle('scale-0', !h); dom.pDetails.classList.toggle('opacity-0', !h); dom.pDetails.classList.toggle('pointer-events-none', !h); };
-            dom.pEditBtn.onclick = () => showStartModal(true);
-            dom.lbToggle.onclick = () => { const isClosed = dom.lbContent.classList.contains('scale-0'); dom.lbContent.classList.toggle('scale-0', !isClosed); dom.lbContent.classList.toggle('opacity-0', !isClosed); dom.lbIcon.textContent = isClosed ? '✖️' : '🏆'; };
-            dom.tabLive.onclick = () => { currentLbTab='live'; updateLbTabs(); updateLeaderboard(); };
-            dom.tabHistory.onclick = () => { currentLbTab='history'; updateLbTabs(); updateLeaderboard(); };
-            dom.setBtn.onclick = () => dom.setModal.classList.remove('hidden');
-            dom.setCloseBtn.onclick = () => { dom.setModal.classList.add('hidden'); saveState(); };
-            dom.volBgm.oninput = e => { gameState.audio.bgm = e.target.value; updateVolumes(); };
-            dom.volSfx.oninput = e => { gameState.audio.sfx = e.target.value; updateVolumes(); };
-            dom.softReset.onclick = () => showAlert(UI_TEXT.alertSoftResetTitle, UI_TEXT.alertSoftResetMsg, () => { gameState.currentSquare=0; gameState.score=0; gameState.squareStates={}; gameState.gameCompleted=false; gameState.isAnswering=false; saveState(); window.location.reload(); }, () => {});
-            dom.hardReset.onclick = () => showAlert(UI_TEXT.alertHardResetTitle, UI_TEXT.alertHardResetMsg, () => { if(playerRef) remove(playerRef); localStorage.removeItem('TM_'+CURRENT_THEME_ID); window.location.reload(); }, () => {});
-            dom.backMenuBtn.onclick = () => window.location.search = '';
-            dom.qaCloseBtn.onclick = () => dom.qaModal.classList.add('hidden');
-            dom.endReviewBtn.onclick = () => { dom.endModal.classList.add('hidden'); showGuide(UI_TEXT.guideReviewMode); };
-            dom.zoomIn.onclick = () => zoomMap(1.2, window.innerWidth/2, window.innerHeight/2);
-            dom.zoomOut.onclick = () => zoomMap(0.8, window.innerWidth/2, window.innerHeight/2);
-            dom.zoomReset.onclick = initMapStage;
-            dom.guideImg.onclick = () => showGuide(CURRENT_THEME_CONFIG.ASSETS.TEXT.NPC_IDLE_CHATS[Math.floor(Math.random()*CURRENT_THEME_CONFIG.ASSETS.TEXT.NPC_IDLE_CHATS.length)]);
-            dom.diceBtn.onclick = rollDice; // 確保此行存在
-        }
-
-        function initScale() { const cW = dom.stage.parentElement.offsetWidth, cH = dom.stage.parentElement.offsetHeight, iW = dom.mapBg.naturalWidth||1024, iH = dom.mapBg.naturalHeight||1366; return Math.min(cW/iW, cH/iH)*0.95; }
-        function zoomMap(factor, cx, cy) {
-            const oldScale = mapScale; mapScale *= factor; mapScale = Math.max(0.5, Math.min(mapScale, 5));
-            mapX = cx - (cx - mapX) * (mapScale / oldScale); mapY = cy - (cy - mapY) * (mapScale / oldScale);
-            constrainMap(); updateMapTransform();
-        }
-        function constrainMap() {
-            // 使用純數學計算，避免 getBoundingClientRect 導致的 Reflow 抖動
-            const currentW = stageW * mapScale, currentH = stageH * mapScale;
-            const cW = window.innerWidth, cH = window.innerHeight;
-            if (currentW <= cW) mapX = (cW - currentW) / 2;
-            else mapX = Math.min(0, Math.max(mapX, cW - currentW));
-            if (currentH <= cH) mapY = (cH - currentH) / 2;
-            else mapY = Math.min(0, Math.max(mapY, cH - currentH));
-        }
-        function updateLbTabs() { dom.tabLive.className = `flex-1 py-1 px-2 text-sm font-bold rounded-lg mr-1 ${currentLbTab==='live'?'bg-blue-500 text-white':'bg-gray-200 text-gray-600'}`; dom.tabHistory.className = `flex-1 py-1 px-2 text-sm font-bold rounded-lg ml-1 ${currentLbTab==='history'?'bg-blue-500 text-white':'bg-gray-200 text-gray-600'}`; }
-        // --- END ---
-    </script>
 </body>
+
 </html>
