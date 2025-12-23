@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大富翁主題產生器 V2</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', system-ui, sans-serif; background-color: #f3f4f6; }
+        .step-card { background: white; padding: 2rem; border-radius: 1rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); margin-bottom: 2rem; }
+        .map-container { position: relative; width: 100%; max-width: 800px; margin: 0 auto; border: 2px dashed #cbd5e1; border-radius: 1rem; overflow: hidden; cursor: crosshair; }
+        .map-point { position: absolute; width: 24px; height: 24px; background-color: rgba(239, 68, 68, 0.8); border: 2px solid white; border-radius: 50%; transform: translate(-50%, -50%); color: white; font-size: 12px; font-weight: bold; display: flex; justify-content: center; align-items: center; pointer-events: none; }
+        .file-item { display: flex; align-items: center; padding: 8px 12px; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 6px; transition: all 0.2s; }
+        .file-item:hover { background: #f8fafc; }
+        .file-item.checked { background: #f1f5f9; opacity: 0.6; }
+        .file-item.checked span.filename { text-decoration: line-through; }
+        .file-required { color: #dc2626; font-size: 0.75rem; font-weight: bold; margin-left: auto; background: #fee2e2; padding: 2px 6px; border-radius: 4px; }
+        .file-optional { color: #64748b; font-size: 0.75rem; margin-left: auto; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; }
+        .input-group label { display: block; font-size: 0.875rem; font-weight: 700; color: #374151; margin-bottom: 0.25rem; }
+        .input-group input, .input-group textarea { width: 100%; padding: 0.5rem; border: 1px solid #d1d5db; border-radius: 0.375rem; font-size: 0.9rem; }
+        .section-title { font-size: 1.125rem; font-weight: 800; color: #1f2937; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid #e5e7eb; }
+    </style>
+</head>
+<body class="p-8">
+    <div class="max-w-5xl mx-auto">
+        <h1 class="text-4xl font-extrabold text-gray-800 mb-2">🎨 主題模組產生器 V2</h1>
+        <p class="text-gray-600 mb-8">完全客製化您的遊戲主題、資源與對話！</p>
+
+        <!-- 步驟 1: 基本資訊 -->
+        <div class="step-card">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">1. 基本資訊</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="input-group">
+                    <label>主題 ID (英文資料夾名)</label>
+                    <input type="text" id="theme-id" placeholder="例如: solar_system" value="new_theme">
+                </div>
+                <div class="input-group">
+                    <label>主題名稱 (選單顯示)</label>
+                    <input type="text" id="theme-name" placeholder="例如: 🚀 太陽系大冒險" value="新主題">
+                </div>
+                <div class="input-group md:col-span-2">
+                    <label>主題描述</label>
+                    <input type="text" id="theme-desc" placeholder="簡短介紹..." value="這是一個全新的冒險！">
+                </div>
+                <div class="input-group md:col-span-2">
+                    <label>Google App Script (GAS) 網址</label>
+                    <input type="text" id="gas-url" placeholder="https://script.google.com/..." value="請貼上您的 GAS 網址">
+                </div>
+            </div>
+        </div>
+
+        <!-- 步驟 2: 地圖座標 -->
+        <div class="step-card">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold text-gray-800">2. 地圖座標設定</h2>
+                <div class="text-sm">已設定: <span id="point-count" class="font-bold text-blue-600 text-xl">0</span> / 20</div>
+            </div>
+            <input type="file" id="map-upload" accept="image/*" class="mb-4 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/>
+            <div id="map-preview-container" class="map-container bg-gray-100 hidden">
+                <img id="map-preview" class="w-full" style="display: block;">
+                <div id="map-points-layer" class="absolute inset-0"></div>
+            </div>
+            <button id="undo-point" class="mt-4 px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50" disabled>↩️ 复原上一點</button>
+        </div>
+
+        <!-- 步驟 3: 資源與文字設定 (全新) -->
+        <div class="step-card bg-gray-50">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">3. 資源與文字設定</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- 3.1 核心圖片 -->
+                <div>
+                    <h3 class="section-title">🖼️ 核心圖片檔名 (img/)</h3>
+                    <div class="space-y-3">
+                        <div class="input-group"><label>地圖背景圖</label><input type="text" id="img-mapBg" value="map_background.png"></div>
+                        <div class="input-group"><label>嚮導 NPC</label><input type="text" id="img-guideNPC" value="guide_bear.png"></div>
+                        <div class="input-group"><label>載入動畫 (GIF)</label><input type="text" id="img-loadingGif" value="loading_bear.gif"></div>
+                    </div>
+                </div>
+
+                <!-- 3.2 音效設定 -->
+                <div>
+                    <h3 class="section-title">🎵 音效檔名 (sound/) (留空則使用預設)</h3>
+                    <div class="space-y-2 grid grid-cols-2 gap-2">
+                        <div class="input-group"><label>背景音樂 (BGM)</label><input type="text" id="sfx-bgm" placeholder="預設 (backgroundMusic.mp3)"></div>
+                        <div class="input-group"><label>點擊 (Click)</label><input type="text" id="sfx-click" placeholder="預設 (click.mp3)"></div>
+                        <div class="input-group"><label>擲骰 (Dice)</label><input type="text" id="sfx-dice" placeholder="預設 (dice.mp3)"></div>
+                        <div class="input-group"><label>移動 (Move)</label><input type="text" id="sfx-move" placeholder="預設 (move.mp3)"></div>
+                        <div class="input-group"><label>答對 (Success)</label><input type="text" id="sfx-success" placeholder="預設 (success.mp3)"></div>
+                        <div class="input-group"><label>答錯 (Fail)</label><input type="text" id="sfx-fail" placeholder="預設 (fail.mp3)"></div>
+                        <div class="input-group col-span-2"><label>通關 (Complete)</label><input type="text" id="sfx-complete" placeholder="預設 (complete.mp3)"></div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2">* 若要使用多個隨機音效，請用逗號分隔</p>
+                </div>
+            </div>
+
+            <!-- 3.3 頭像設定 -->
+            <div class="mt-8">
+                <div class="flex justify-between items-center border-b-2 border-e5e7eb mb-4 pb-2">
+                     <h3 class="text-lg font-extrabold text-gray-800">👤 頭像設定 (img/)</h3>
+                     <button onclick="addAvatarRow()" class="px-3 py-1 bg-green-500 text-white text-sm rounded hover:bg-green-600">+ 新增頭像</button>
+                </div>
+                <div id="avatar-list" class="space-y-2 mb-4">
+                    <!-- JS 動態生成 -->
+                </div>
+            </div>
+
+            <!-- 3.4 文字設定 -->
+            <div class="mt-8">
+                <h3 class="section-title">💬 文字與對話設定</h3>
+                <div class="space-y-4">
+                    <div class="input-group">
+                        <label>NPC 歡迎詞</label>
+                        <input type="text" id="txt-welcome" value="歡迎來到寶島！準備好冒險了嗎？">
+                    </div>
+                    <div class="input-group">
+                        <label>NPC 閒聊台詞 (一行一句)</label>
+                        <textarea id="txt-idle" rows="4" class="font-mono text-sm">加油！
+別放棄！
+你認識多少台灣特有種呢？
+記得多喝水喔！</textarea>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                         <div class="input-group">
+                            <label>Mii 暱稱 - 形容詞 (一行一個)</label>
+                            <textarea id="txt-adj" rows="5" class="font-mono text-sm">開朗的
+活潑的
+神秘的
+可愛的</textarea>
+                        </div>
+                        <div class="input-group">
+                            <label>Mii 暱稱 - 名詞 (一行一個)</label>
+                            <textarea id="txt-noun" rows="5" class="font-mono text-sm">探險家
+學霸
+黑熊
+石虎</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 步驟 4: 產生程式碼 -->
+        <div class="step-card">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">4. 產生模組程式碼</h2>
+            <div class="mb-8">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="text-lg font-bold text-blue-800">📄 theme.js (存到 modules/[ID]/theme.js)</h3>
+                    <button onclick="copyToClipboard('output-theme-js')" class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">複製</button>
+                </div>
+                <textarea id="output-theme-js" class="w-full h-64 p-4 font-mono text-sm bg-gray-800 text-green-400 rounded-xl" readonly></textarea>
+            </div>
+            <div>
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="text-lg font-bold text-blue-800">📋 theme_list.js (加入到現有清單)</h3>
+                    <button onclick="copyToClipboard('output-list-js')" class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">複製</button>
+                </div>
+                <textarea id="output-list-js" class="w-full h-32 p-4 font-mono text-sm bg-gray-800 text-green-400 rounded-xl" readonly></textarea>
+            </div>
+        </div>
+
+        <!-- 步驟 5: 檔案檢查清單 -->
+        <div class="step-card bg-yellow-50 border-2 border-yellow-200">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold text-yellow-900">5. 檔案準備清單 (Checklist)</h2>
+                <button onclick="generateReport()" class="px-4 py-2 bg-yellow-600 text-white font-bold rounded-lg hover:bg-yellow-700 shadow-sm">📋 生成報告</button>
+            </div>
+            <p class="text-yellow-800 mb-4">請確認 <code id="folder-path" class="bg-yellow-100 px-2 py-1 rounded font-bold">modules/???/</code> 資料夾中已具備以下檔案：</p>
+            <div class="mb-6 bg-white p-4 rounded-xl shadow-sm">
+                <div class="flex justify-between text-sm text-gray-600 mb-2"><span>準備進度: <span id="progress-text" class="font-bold">0/0</span></span><span id="progress-percent">0%</span></div>
+                <div class="w-full bg-gray-200 rounded-full h-2.5"><div id="progress-bar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div></div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div><h3 class="font-bold text-gray-700 mb-2">📁 圖片資源 (img/)</h3><div id="checklist-img" class="space-y-2"></div></div>
+                <div><h3 class="font-bold text-gray-700 mb-2">🔊 音效資源 (sound/)</h3><div id="checklist-sound" class="space-y-2"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let coordinates = [];
+        const mapContainer = document.getElementById('map-preview-container'), mapImg = document.getElementById('map-preview'), pointsLayer = document.getElementById('map-points-layer'), pointCountEl = document.getElementById('point-count'), undoBtn = document.getElementById('undo-point');
+
+        // 預設頭像列表
+        const defaultAvatars = [
+            { key: 'bear', file: 'avatar_bear.png' }, { key: 'deer', file: 'avatar_deer.png' },
+            { key: 'buffalo', file: 'avatar_buffalo.png' }, { key: 'magpie', file: 'avatar_magpie.png' }
+        ];
+
+        // 初始化
+        function init() {
+            defaultAvatars.forEach(a => addAvatarRow(a.key, a.file));
+            document.getElementById('map-upload').addEventListener('change', e => {
+                const f = e.target.files[0]; if (!f) return;
+                const r = new FileReader(); r.onload = ev => { mapImg.src = ev.target.result; mapContainer.classList.remove('hidden'); coordinates = []; updatePoints(); generateAll(); }; r.readAsDataURL(f);
+            });
+            pointsLayer.addEventListener('click', e => { if (coordinates.length>=20) return alert("已達20個上限"); const r = mapContainer.getBoundingClientRect(); coordinates.push({t:((e.clientY-r.top)/r.height*100).toFixed(1)+"%", l:((e.clientX-r.left)/r.width*100).toFixed(1)+"%"}); updatePoints(); generateAll(); });
+            undoBtn.onclick = () => { coordinates.pop(); updatePoints(); generateAll(); };
+            document.querySelectorAll('input, textarea').forEach(el => el.addEventListener('input', generateAll));
+            generateAll();
+        }
+
+        function updatePoints() {
+            pointsLayer.innerHTML = ''; coordinates.forEach((c, i) => { const p = document.createElement('div'); p.className = 'map-point'; p.style.top = c.t; p.style.left = c.l; p.textContent = i+1; pointsLayer.appendChild(p); });
+            pointCountEl.textContent = coordinates.length; undoBtn.disabled = coordinates.length === 0;
+        }
+
+        function addAvatarRow(k = '', f = '') {
+            const div = document.createElement('div'); div.className = 'flex gap-2 avatar-row';
+            div.innerHTML = `<input type="text" placeholder="代碼 (如: bear)" class="w-1/3 p-2 border rounded text-sm avatar-key" value="${k}"><input type="text" placeholder="檔名 (如: bear.png)" class="w-2/3 p-2 border rounded text-sm avatar-file" value="${f}"><button onclick="this.parentElement.remove(); generateAll();" class="px-2 text-red-500 hover:text-red-700">✖</button>`;
+            div.querySelectorAll('input').forEach(i => i.addEventListener('input', generateAll));
+            document.getElementById('avatar-list').appendChild(div);
+        }
+
+        function getVal(id) { return document.getElementById(id).value.trim(); }
+        function getList(id) { return document.getElementById(id).value.trim().split('\n').filter(x => x.trim()).map(x => `"${x.trim()}"`).join(',\n            '); }
+        function getSFX(id) { const v = getVal(id); if(!v) return null; return v.includes(',') ? `[${v.split(',').map(s => `"${"sound/"+s.trim()}"`).join(', ')}]` : `["sound/${v}"]`; }
+
+        function generateAll() {
+            const tid = getVal('theme-id') || 'new_theme';
+            // 產生 theme.js
+            let avStr = []; document.querySelectorAll('.avatar-row').forEach(r => { const k = r.querySelector('.avatar-key').value.trim(), f = r.querySelector('.avatar-file').value.trim(); if(k && f) avStr.push(`"${k}": "img/${f}"`); });
+            let coStr = coordinates.map(c => `        { top: "${c.t}", left: "${c.l}" }`).join(',\n');
+            if (coordinates.length < 20) coStr += `\n        // ... (還需要 ${20 - coordinates.length} 個座標)`;
+
+            let sfxStr = [];
+            ['click', 'dice', 'move', 'success', 'fail', 'complete', 'bgm'].forEach(k => {
+                const val = getSFX('sfx-' + k);
+                if (val) sfxStr.push(`"${k}": ${k==='bgm'?val.replace('[','').replace(']',''):val}`);
+            });
+
+            document.getElementById('output-theme-js').value = `window.CURRENT_THEME_CONFIG = {
+    GAS_URL: "${getVal('gas-url')}",
+    BOARD_COORDINATES: [\n${coStr}\n    ],
+    ASSETS: {
+        AVATARS: {\n            ${avStr.join(',\n            ')}\n        },
+        IMAGES: {
+            "guideNPC": "img/${getVal('img-guideNPC')}",
+            "loadingGif": "img/${getVal('img-loadingGif')}",
+            "mapBg": "img/${getVal('img-mapBg')}"
+        },
+        SFX: {
+            ${sfxStr.join(', ')}
+        },
+        TEXT: {
+            NPC_WELCOME: "${getVal('txt-welcome')}",
+            NPC_IDLE_CHATS: [\n            ${getList('txt-idle')}\n        ],
+            MII_ADJECTIVES: [\n            ${getList('txt-adj')}\n        ],
+            MII_NOUNS: [\n            ${getList('txt-noun')}\n        ]
+        }
+    }
+};`;
+            document.getElementById('output-list-js').value = `    {\n        id: "${tid}",\n        name: "${getVal('theme-name')}",\n        description: "${getVal('theme-desc')}",\n        cover: "img/${getVal('img-mapBg')}"\n    },`;
+            updateChecklist(tid);
+        }
+
+        // 檢查清單
+        let checklistData = [];
+        function updateChecklist(tid) {
+            document.getElementById('folder-path').textContent = `modules/${tid}/`;
+            // 如果 TID 沒變且已有資料，保留勾選狀態
+            if (checklistData.length > 0 && document.getElementById('folder-path').dataset.lastId === tid) return;
+            document.getElementById('folder-path').dataset.lastId = tid;
+
+            checklistData = [];
+            const add = (f, req, type) => checklistData.push({ file: type + '/' + f.trim(), req, checked: false, type });
+            add(getVal('img-mapBg'), true, 'img'); add(getVal('img-guideNPC'), true, 'img'); add(getVal('img-loadingGif'), true, 'img');
+            document.querySelectorAll('.avatar-file').forEach(i => { if (i.value.trim()) add(i.value, true, 'img'); });
+            
+            // 音效檢查 (只檢查有填寫的)
+            if (getVal('sfx-bgm')) add(getVal('sfx-bgm'), true, 'sound');
+            ['sfx-click', 'sfx-dice', 'sfx-move', 'sfx-success', 'sfx-fail', 'sfx-complete'].forEach(id => {
+                const v = getVal(id);
+                if (v) v.split(',').forEach(f => { if (f.trim()) add(f, true, 'sound'); });
+            });
+            
+            renderChecklist();
+        }
+
+        function renderChecklist() {
+            const ic = document.getElementById('checklist-img'), sc = document.getElementById('checklist-sound'); ic.innerHTML = ''; sc.innerHTML = '';
+            // 去除重複檔案
+            const uniqueList = [...new Map(checklistData.map(item => [item.file, item])).values()];
+            uniqueList.forEach((item, i) => {
+                const div = document.createElement('div'); div.className = `file-item ${item.checked ? 'checked' : ''}`;
+                div.innerHTML = `<input type="checkbox" id="f${i}" class="w-5 h-5 mr-3 accent-blue-500" ${item.checked?'checked':''}><label for="f${i}" class="flex-grow flex items-center cursor-pointer"><span class="filename font-mono text-sm text-gray-700">${item.file}</span><span class="${item.req?'file-required':'file-optional'}">${item.req?'必須':'選用'}</span></label>`;
+                div.querySelector('input').onchange = (e) => { item.checked = e.target.checked; renderChecklist(); };
+                (item.type === 'img' ? ic : sc).appendChild(div);
+            });
+            updateProgress(uniqueList);
+        }
+        function updateProgress(list) {
+            const total = list.filter(i=>i.req).length, done = list.filter(i=>i.req&&i.checked).length, pct = Math.round((done/total)*100)||0;
+            document.getElementById('progress-text').textContent = `${done}/${total}`; document.getElementById('progress-percent').textContent = `${pct}%`;
+            document.getElementById('progress-bar').style.width = `${pct}%`; document.getElementById('progress-bar').className = `h-2.5 rounded-full transition-all ${pct===100?'bg-green-500':'bg-blue-600'}`;
+        }
+
+        window.copyToClipboard = (id) => { document.getElementById(id).select(); document.execCommand('copy'); alert("已複製！"); };
+        window.generateReport = () => {
+            const done = checklistData.filter(i=>i.checked).map(i=>`✅ ${i.file}`), todo = checklistData.filter(i=>!i.checked).map(i=>`⬜ ${i.file}`);
+            alert(`【${getVal('theme-id')} 準備報告】\n\n已完成:\n${done.join('\n')||'(無)'}\n\n待處理:\n${todo.join('\n')||'(已完成！)'}`);
+        };
+
+        init();
+    </script>
+</body>
+</html>
