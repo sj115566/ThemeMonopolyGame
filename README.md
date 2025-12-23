@@ -15,7 +15,7 @@ git push -u origin main
 ```
 
 ### 2. 設定 GitHub Secrets (重要)
-為了保護 Firebase API Key 不被公開，專案使用了 GitHub Secrets。部署時會自動將 `global_config.js` 中的佔位符替換為 Secrets 中的值。
+為了保護 Firebase API Key 不被公開，專案使用了 GitHub Secrets。部署時 GitHub Actions 會在編譯過程中自動將這些金鑰注入。
 
 請至你的 GitHub 儲存庫設定：
 **Settings > Secrets and variables > Actions > New repository secret**
@@ -23,6 +23,7 @@ git push -u origin main
 新增以下 Secret：
 - `FIREBASE_API_KEY`: 你的 Firebase API Key
 - `FIREBASE_AUTH_DOMAIN`: 你的 Firebase Auth Domain
+- `FIREBASE_DATABASE_URL`: 你的 Firebase Database URL
 - `FIREBASE_PROJECT_ID`: 你的 Firebase Project ID
 - `FIREBASE_STORAGE_BUCKET`: 你的 Firebase Storage Bucket
 - `FIREBASE_MESSAGING_SENDER_ID`: 你的 Firebase Messaging Sender ID
@@ -34,5 +35,28 @@ git push -u origin main
 將 **Build and deployment > Branch** 設定為 `gh-pages` (由 Action 自動產生)。
 
 ## 本地開發
-若要在本地執行，請手動將 `global_config.js` 中的 `{{...}}` 替換為實際的 Firebase 配置，或使用開發工具進行替代。
-**注意：請勿將包含實際 API Key 的 `global_config.js` 推送到公開的 GitHub 儲存庫。**
+本專案目前使用 **Vite** 進行開發。
+
+1. **安裝依賴**：
+   ```bash
+   npm install
+   ```
+
+2. **設定環境變數**：
+   在根目錄建立 `.env` 檔案，內容如下：
+   ```env
+   VITE_FIREBASE_API_KEY=你的_API_KEY
+   VITE_FIREBASE_AUTH_DOMAIN=你的_AUTH_DOMAIN
+   VITE_FIREBASE_DATABASE_URL=你的_DATABASE_URL
+   VITE_FIREBASE_PROJECT_ID=你的_PROJECT_ID
+   VITE_FIREBASE_STORAGE_BUCKET=你的_STORAGE_BUCKET
+   VITE_FIREBASE_MESSAGING_SENDER_ID=你的_SENDER_ID
+   VITE_FIREBASE_APP_ID=你的_APP_ID
+   ```
+
+3. **啟動開發伺服器**：
+   ```bash
+   npm run dev
+   ```
+
+**注意：`.env` 檔案已被列入 `.gitignore`，請勿推送到 GitHub。**
