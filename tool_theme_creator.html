@@ -513,6 +513,14 @@
                         class="w-full p-3 rounded-xl border border-indigo-100 bg-gray-50 focus:bg-white outline-none">
                     <p class="text-[10px] text-gray-500">金鑰將儲存在您的瀏覽器中 (LocalStorage)。</p>
                 </div>
+                <div class="space-y-2 border-t pt-4 border-dashed border-indigo-100">
+                    <label class="text-sm font-bold text-purple-900 flex items-center gap-2">
+                        ☁️ Cloudflare Worker 代理網址
+                    </label>
+                    <input type="text" id="ai-proxy-url" placeholder="https://your-worker.workers.dev"
+                        class="w-full p-3 rounded-xl border border-purple-100 bg-purple-50 focus:bg-white outline-none">
+                    <p class="text-[10px] text-purple-400">若填寫此項，系統將優先透過您的 Worker 代理請求，避免暴露 API Key。</p>
+                </div>
                 <div class="pt-4 flex gap-3">
                     <button onclick="document.getElementById('ai-settings-modal').classList.add('hidden')"
                         class="flex-1 py-3 bg-gray-100 rounded-xl font-bold hover:bg-gray-200 transition-colors">取消</button>
@@ -628,8 +636,10 @@
         function saveAISettings() {
             const geminiKey = document.getElementById('ai-api-key').value.trim();
             const elevenKey = document.getElementById('ai-eleven-key').value.trim();
+            const proxyUrl = document.getElementById('ai-proxy-url').value.trim();
             localStorage.setItem('GEMINI_API_KEY', geminiKey);
             localStorage.setItem('ELEVENLABS_API_KEY', elevenKey);
+            localStorage.setItem('AI_PROXY_URL', proxyUrl);
             document.getElementById('ai-settings-modal').classList.add('hidden');
             alert("✅ AI 設定已儲存成功！");
         }
@@ -731,28 +741,42 @@ ${sfxArr.join(',\n')}
 
         async function aiCall(prompt) {
             const apiKey = localStorage.getItem('GEMINI_API_KEY');
-            if (!apiKey) {
-                alert("請先設定 Gemini API Key！");
+            const proxyUrl = localStorage.getItem('AI_PROXY_URL');
+
+            if (!apiKey && !proxyUrl) {
+                alert("請先設定 Gemini API Key 或 Cloudflare Worker 代理網址！");
                 document.getElementById('ai-settings-modal').classList.remove('hidden');
                 return null;
             }
 
             showLoading(true, "AI 正在發想內容...");
             try {
-                // 使用經測試證明最相容的 2.0-flash 模型與 v1 端點
-                const url = `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: prompt + " \n\n請務必僅以純 JSON 格式回答，不要有其他解釋文字。" }] }]
-                    })
-                });
+                let response;
+                const payload = {
+                    contents: [{ parts: [{ text: prompt + " \n\n請務必僅以純 JSON 格式回答，不要有其他解釋文字。" }] }]
+                };
+
+                if (proxyUrl) {
+                    // 使用 Worker 代理
+                    response = await fetch(proxyUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ type: 'gemini', payload: payload })
+                    });
+                } else {
+                    // 直連 Google API
+                    const url = `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                    response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                }
 
                 const data = await response.json();
 
                 if (!response.ok) {
-                    throw new Error(data.error?.message || `API Error: ${response.status}`);
+                    throw new Error(data.error?.message || data.error || `API Error: ${response.status}`);
                 }
 
                 if (!data.candidates || data.candidates.length === 0) {
@@ -949,8 +973,10 @@ ${sfxArr.join(',\n')}
 
         async function generateAISFX(inputId, defaultText) {
             const apiKey = localStorage.getItem('ELEVENLABS_API_KEY');
-            if (!apiKey) {
-                alert("請先設定 ElevenLabs API Key！");
+            const proxyUrl = localStorage.getItem('AI_PROXY_URL');
+
+            if (!apiKey && !proxyUrl) {
+                alert("請先設定 ElevenLabs API Key 或 Cloudflare Worker 代理網址！");
                 document.getElementById('ai-settings-modal').classList.remove('hidden');
                 return;
             }
@@ -959,25 +985,36 @@ ${sfxArr.join(',\n')}
             const userPrompt = window.prompt(`【AI 音效生成】請修正或輸入提示詞：`, `A ${defaultText} for a ${themeName} themed game`);
             if (!userPrompt) return;
 
-            showLoading(true, "正在透過 ElevenLabs 生成音效...");
+            showLoading(true, "正在透過 AI 生成音效...");
             try {
-                const url = "https://api.elevenlabs.io/v1/sound-generation";
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        'xi-api-key': apiKey,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        text: userPrompt,
-                        duration_seconds: 5, // 最長 30 秒
-                        prompt_influence: 0.3
-                    })
-                });
+                let response;
+                const payload = {
+                    text: userPrompt,
+                    duration_seconds: 5,
+                    prompt_influence: 0.3
+                };
+
+                if (proxyUrl) {
+                    response = await fetch(proxyUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ type: 'elevenlabs-sfx', payload: payload })
+                    });
+                } else {
+                    const url = "https://api.elevenlabs.io/v1/sound-generation";
+                    response = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'xi-api-key': apiKey,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(payload)
+                    });
+                }
 
                 if (!response.ok) {
-                    const errData = await response.json();
-                    throw new Error(errData.detail?.message || "生成失敗");
+                    const errData = await response.json().catch(() => ({ detail: { message: "生成失敗" } }));
+                    throw new Error(errData.detail?.message || errData.error || "生成失敗");
                 }
 
                 const audioBlob = await response.blob();
@@ -999,8 +1036,10 @@ ${sfxArr.join(',\n')}
 
         async function generateAIMusic(inputId, defaultText) {
             const apiKey = localStorage.getItem('ELEVENLABS_API_KEY');
-            if (!apiKey) {
-                alert("請先設定 ElevenLabs API Key！");
+            const proxyUrl = localStorage.getItem('AI_PROXY_URL');
+
+            if (!apiKey && !proxyUrl) {
+                alert("請先設定 ElevenLabs API Key 或 Cloudflare Worker 代理網址！");
                 document.getElementById('ai-settings-modal').classList.remove('hidden');
                 return;
             }
@@ -1009,24 +1048,35 @@ ${sfxArr.join(',\n')}
             const userPrompt = window.prompt(`【AI 音樂生成】請修正或輸入音樂描述：`, `${defaultText} for a ${themeName} themed board game, looped, high quality`);
             if (!userPrompt) return;
 
-            showLoading(true, "正在透過 ElevenLabs 生成背景音樂...");
+            showLoading(true, "正在透過 AI 生成背景音樂...");
             try {
-                const url = "https://api.elevenlabs.io/v1/music";
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: {
-                        'xi-api-key': apiKey,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        prompt: userPrompt,
-                        music_length_ms: 30000 // ElevenLabs Music 使用 ms
-                    })
-                });
+                let response;
+                const payload = {
+                    prompt: userPrompt,
+                    music_length_ms: 30000
+                };
+
+                if (proxyUrl) {
+                    response = await fetch(proxyUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ type: 'elevenlabs-music', payload: payload })
+                    });
+                } else {
+                    const url = "https://api.elevenlabs.io/v1/music";
+                    response = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'xi-api-key': apiKey,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(payload)
+                    });
+                }
 
                 if (!response.ok) {
-                    const errData = await response.json();
-                    throw new Error(errData.detail?.message || "生成失敗");
+                    const errData = await response.json().catch(() => ({ detail: { message: "生成失敗" } }));
+                    throw new Error(errData.detail?.message || errData.error || "生成失敗");
                 }
 
                 const audioBlob = await response.blob();
@@ -1369,6 +1419,7 @@ ${sfxArr.join(',\n')}
             // 預載 API Key
             document.getElementById('ai-api-key').value = localStorage.getItem('GEMINI_API_KEY') || '';
             document.getElementById('ai-eleven-key').value = localStorage.getItem('ELEVENLABS_API_KEY') || '';
+            document.getElementById('ai-proxy-url').value = localStorage.getItem('AI_PROXY_URL') || '';
 
             generateAll();
         }

@@ -1,0 +1,10 @@
+name = "thememonopoly-api-proxy"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+[vars]
+# Add any non-secret variables here if needed
+
+# You will need to add these secrets using:
+# npx wrangler secret put GEMINI_API_KEY
+# npx wrangler secret put ELEVENLABS_API_KEY
