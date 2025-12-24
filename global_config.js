@@ -1,6 +1,7 @@
 /**
  * 通用遊戲設定 (Global Config)
  * 存放所有主題共用的設定，例如 Firebase。
+ * Security Note: Firebase keys are served via environment variables for safety.
  */
 export const FIREBASE_CONFIG = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
