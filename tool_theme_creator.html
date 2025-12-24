@@ -125,7 +125,7 @@
             background: rgba(0, 0, 0, 0.3);
         }
     </style>
-  <script type="module" crossorigin src="./assets/tool-Dz44IPOV.js"></script>
+  <script type="module" crossorigin src="./assets/tool-DkbKktb8.js"></script>
   <link rel="modulepreload" crossorigin href="./assets/global_config-BC-EMzQB.js">
 </head>
 
@@ -514,6 +514,14 @@
                     <input type="password" id="ai-api-key" placeholder="貼上你的 API Key"
                         class="w-full p-3 rounded-xl border border-indigo-100 bg-gray-50 focus:bg-white outline-none">
                     <p class="text-[10px] text-gray-500">金鑰將儲存在您的瀏覽器中 (LocalStorage)。</p>
+                </div>
+                <div class="space-y-2 border-t pt-4 border-dashed border-indigo-100">
+                    <label class="text-sm font-bold text-purple-900 flex items-center gap-2">
+                        ☁️ Cloudflare Worker 代理網址
+                    </label>
+                    <input type="text" id="ai-proxy-url" placeholder="https://your-worker.workers.dev"
+                        class="w-full p-3 rounded-xl border border-purple-100 bg-purple-50 focus:bg-white outline-none">
+                    <p class="text-[10px] text-purple-400">若填寫此項，系統將優先透過您的 Worker 代理請求，避免暴露 API Key。</p>
                 </div>
                 <div class="pt-4 flex gap-3">
                     <button onclick="document.getElementById('ai-settings-modal').classList.add('hidden')"
