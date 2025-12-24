@@ -7,6 +7,10 @@
     <title>大富翁主題產生器 Pro | AI Powered</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <style>
         :root {
             --primary: #6366f1;
@@ -139,10 +143,18 @@
                     class="px-5 py-3 glass-card text-indigo-900 font-bold flex items-center gap-2 hover:bg-white transition-all">
                     ⚙️ AI 設定
                 </button>
-                <button onclick="saveToProject()"
-                    class="btn-primary px-8 py-3 rounded-2xl font-bold text-lg shadow-xl flex items-center gap-2">
-                    🚀 儲存至專案
+                <button onclick="publishToCloud()"
+                    class="bg-white/90 text-indigo-600 px-6 py-3 rounded-2xl font-bold text-lg shadow-xl flex items-center gap-2 hover:bg-white transition-all border border-indigo-200">
+                    ☁️ 雲端發佈
                 </button>
+                <button onclick="openCloudThemesModal()"
+                    class="px-5 py-3 glass-card text-blue-600 font-bold flex items-center gap-2 hover:bg-white transition-all shadow-lg border-2 border-blue-100">
+                    📂 讀取雲端主題
+                </button>
+                <a href="./index.html"
+                    class="px-5 py-3 glass-card text-gray-600 font-bold flex items-center gap-2 hover:bg-white transition-all text-sm">
+                    🏠 回主頁
+                </a>
             </div>
         </header>
 
@@ -150,7 +162,6 @@
             <!-- Left Side: Config -->
             <div class="lg:col-span-2 space-y-8">
 
-                <!-- 1. 基本資訊 -->
                 <section class="glass-card p-8">
                     <div class="flex justify-between items-center mb-6 text-indigo-900 border-b pb-4 border-indigo-100">
                         <h2 class="text-2xl font-bold flex items-center gap-2">✨ 1. 主題基因</h2>
@@ -176,6 +187,11 @@
                                 placeholder="介紹您的新冒險..."></textarea>
                         </div>
                         <div class="md:col-span-2 space-y-2">
+                            <label class="text-sm font-bold text-gray-700">NPC 歡迎詞 (歡迎來到...)</label>
+                            <input type="text" id="txt-welcome" placeholder="例如: 冒險者，歡迎來到神祕的火星！"
+                                class="w-full p-3 rounded-xl input-stylish">
+                        </div>
+                        <div class="md:col-span-2 space-y-2">
                             <label class="text-sm font-bold text-gray-700">Google App Script (GAS) 網址</label>
                             <input type="text" id="gas-url" placeholder="https://script.google.com/..."
                                 class="w-full p-3 rounded-xl input-stylish font-mono text-xs">
@@ -183,36 +199,108 @@
                     </div>
                 </section>
 
-                <!-- 2. 地圖佈局 -->
+                <!-- 2. AI 視覺中心 -->
+                <section class="glass-card p-8 bg-white/40">
+                    <div class="flex justify-between items-center mb-6 text-indigo-900 border-b pb-4 border-indigo-100">
+                        <h2 class="text-2xl font-bold flex items-center gap-2">🎨 2. AI 視覺提案</h2>
+                    </div>
+                    <div class="space-y-6">
+                        <div
+                            class="bg-purple-50 p-6 rounded-2xl border border-purple-100 flex flex-col md:flex-row gap-6 items-center">
+                            <div class="flex-grow">
+                                <h3 class="font-bold text-purple-900 mb-1 text-lg">生成繪圖提示詞</h3>
+                                <p class="text-sm text-purple-600">根據您的主題名稱，自動構想視覺場景、角色風格與音樂調性。</p>
+                            </div>
+                            <button onclick="aiGeneratePrompts()"
+                                class="w-full md:w-auto px-8 py-4 bg-purple-600 text-white rounded-2xl font-extrabold shadow-lg hover:bg-purple-700 transition-all active:scale-95 flex items-center justify-center gap-2">
+                                ✨ 生成 AI 提示詞
+                            </button>
+                        </div>
+
+                        <div id="ai-prompts-output"
+                            class="text-sm text-gray-700 bg-white/80 p-6 rounded-2xl hidden border border-purple-100 leading-relaxed space-y-4 shadow-inner">
+                        </div>
+
+                        <div id="prompts-control" class="hidden grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div
+                                class="p-4 bg-white/50 rounded-xl border border-indigo-50 flex flex-col items-center gap-3">
+                                <span class="text-xs font-bold text-indigo-400 uppercase tracking-widest">嚮導 NPC</span>
+                                <button onclick="generateAIImage('prompt-npc', null, 'img-guideNPC')"
+                                    class="w-full py-3 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all shadow-md">🪄
+                                    生成 NPC 圖像</button>
+                            </div>
+                            <div
+                                class="p-4 bg-white/50 rounded-xl border border-indigo-50 flex flex-col items-center gap-3">
+                                <span class="text-xs font-bold text-indigo-400 uppercase tracking-widest">載入動畫</span>
+                                <button onclick="generateAIImage('prompt-loading', null, 'img-loadingGif')"
+                                    class="w-full py-3 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all shadow-md">🪄
+                                    生成載入圖</button>
+                            </div>
+                            <div
+                                class="p-4 bg-white/50 rounded-xl border border-indigo-50 flex flex-col items-center gap-3">
+                                <span class="text-xs font-bold text-indigo-400 uppercase tracking-widest">角色頭像</span>
+                                <button onclick="generateAIAvatars()"
+                                    class="w-full py-3 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all shadow-md">🪄
+                                    生成 4 組頭像</button>
+                            </div>
+                        </div>
+
+                        <!-- 隱藏的 Prompt 容器 -->
+                        <textarea id="prompt-map" class="hidden"></textarea>
+                        <textarea id="prompt-npc" class="hidden"></textarea>
+                        <textarea id="prompt-loading" class="hidden"></textarea>
+                        <textarea id="prompt-avatar" class="hidden"></textarea>
+                    </div>
+                </section>
+
+                <!-- 3. 地圖佈局 -->
                 <section class="glass-card p-8">
                     <div class="flex justify-between items-center mb-6 text-indigo-900 border-b pb-4 border-indigo-100">
-                        <h2 class="text-2xl font-bold flex items-center gap-2">🗺️ 2. 地圖導航</h2>
+                        <h2 class="text-2xl font-bold flex items-center gap-2">🗺️ 3. 地圖導航</h2>
                         <div class="text-sm px-4 py-1 bg-indigo-100 rounded-full font-bold">
-                            節點: <span id="point-count" class="text-indigo-600">0</span> / 20
+                            節點: <span id="point-count" class="text-indigo-600">0</span> / 20 (至少 1 個)
                         </div>
                     </div>
-                    <div class="mb-4 flex gap-4 items-center">
-                        <input type="file" id="map-upload" accept="image/*"
-                            class="flex-grow text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" />
+                    <p class="text-sm text-gray-500 mb-6">請先生成（或上傳）地圖背景，接著在地圖上點擊以標記遊戲節點位置。</p>
+
+                    <div
+                        class="mb-6 flex flex-wrap gap-4 items-center p-4 bg-white/40 rounded-2xl border border-indigo-50">
+                        <div class="flex-grow">
+                            <label class="block text-xs font-bold text-gray-400 mb-1 uppercase tracking-widest">方法 A:
+                                上傳圖檔</label>
+                            <input type="file" id="map-upload" accept="image/*"
+                                class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-white file:text-indigo-700 hover:file:bg-indigo-50" />
+                        </div>
+                        <div class="hidden md:block w-px h-10 bg-indigo-100"></div>
+                        <div class="flex-grow md:flex-grow-0">
+                            <label class="block text-xs font-bold text-gray-400 mb-1 uppercase tracking-widest">方法 B: AI
+                                繪圖</label>
+                            <button onclick="generateAIImage('prompt-map', 'map-preview', 'img-mapBg')"
+                                class="w-full md:w-auto px-6 py-2 bg-indigo-600 text-white rounded-xl font-bold shadow-md flex items-center justify-center gap-2 hover:bg-indigo-700 transition-all active:scale-95 disabled:opacity-50"
+                                id="btn-gen-map" disabled title="請先生成 AI 提示詞">
+                                🪄 AI 生成地圖
+                            </button>
+                        </div>
                         <button id="undo-point"
-                            class="px-4 py-2 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 disabled:opacity-50 transition-all"
+                            class="px-4 py-2 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 disabled:opacity-50 transition-all font-bold"
                             disabled>↩️ 复原</button>
                     </div>
-                    <div id="map-preview-container" class="map-container">
-                        <img id="map-preview" class="w-full min-h-[300px] object-cover"
+
+                    <div id="map-preview-container" class="map-container shadow-2xl">
+                        <img id="map-preview" class="w-full min-h-[400px] object-cover"
                             src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='800' height='600'><rect width='100%' height='100%' fill='%23f1f5f9'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='20' fill='%2394a3b8'>請上傳地圖背景或輸入 AI 提示</text></svg>">
                         <div id="map-points-layer" class="absolute inset-0"></div>
                     </div>
                 </section>
 
-                <!-- 3. AI 視覺中心 (New) -->
+                <!-- 4. 遊戲腳本與題目 -->
                 <section class="glass-card p-8 bg-white/40">
-                    <h2 class="text-2xl font-bold text-indigo-900 mb-6 flex items-center gap-2">🧠 3. AI 內容生成</h2>
+                    <h2 class="text-2xl font-bold text-indigo-900 mb-6 flex items-center gap-2">🧠 4. 遊戲內容生成</h2>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-indigo-900">
                         <!-- AI 文字 -->
                         <div class="space-y-6">
                             <div class="space-y-3">
-                                <label class="block text-sm font-bold">NPC 歡迎與閒聊</label>
+                                <label class="block text-sm font-bold">NPC 閒聊對話</label>
                                 <button onclick="aiGenerateChats()"
                                     class="w-full py-2 bg-indigo-50 border border-indigo-200 rounded-xl text-sm font-bold hover:bg-indigo-100 transition-colors">✨
                                     生成 AI 對話</button>
@@ -238,103 +326,167 @@
                         </div>
                         <!-- AI 題目 -->
                         <div class="space-y-4">
-                            <div class="flex justify-between items-center">
-                                <label class="block text-sm font-bold">AI 題目產生器 (JSON)</label>
+                            <div class="space-y-2 border-l-4 border-orange-400 pl-4 py-1">
+                                <h4 class="font-bold text-orange-950">區域 A: 題目生成設定</h4>
+                                <label class="block text-xs font-bold text-orange-700">自訂題目主題 (選填)</label>
+                                <textarea id="ai-questions-topic" rows="2"
+                                    class="w-full p-2.5 rounded-xl input-stylish text-xs"
+                                    placeholder="例如：關於動物名稱、基本加減法..."></textarea>
                                 <button onclick="aiGenerateQuestions()"
-                                    class="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-bold hover:bg-orange-200">生成
-                                    GAS 專用題目</button>
+                                    class="w-full py-3 bg-orange-500 text-white rounded-xl text-sm font-extrabold hover:bg-orange-600 shadow-md transition-all active:scale-95 flex items-center justify-center gap-2">
+                                    ✨ 根據標記點生成題目
+                                </button>
+                                <p class="text-[10px] text-orange-600 mt-1 italic font-medium">※ 將根據您在「步驟
+                                    3」標記的點位數量進行取名與出題。</p>
                             </div>
-                            <div class="relative group">
-                                <textarea id="output-questions-json" rows="8"
-                                    class="w-full p-3 rounded-xl input-stylish text-xs font-mono bg-gray-900 text-green-400"
-                                    placeholder="生成的題目將顯示在此，可貼到 GAS..."></textarea>
-                                <button onclick="copyToClipboard('output-questions-json')"
-                                    class="absolute top-2 right-2 px-2 py-1 bg-gray-700 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity">複製</button>
-                            </div>
-                            <!-- AI 繪圖指令生成 -->
-                            <div class="space-y-3 pt-4 border-t border-indigo-100">
-                                <label class="block text-sm font-bold">🎨 AI 繪圖指令生成</label>
-                                <button onclick="aiGenerateImagePrompts()"
-                                    class="w-full py-2 bg-purple-50 border border-purple-200 rounded-xl text-sm font-bold text-purple-700 hover:bg-purple-100 italic transition-all active:scale-95">✨
-                                    生成地圖與 NPC 指令</button>
-                                <div id="ai-img-prompts"
-                                    class="text-[10px] text-gray-600 bg-white/50 p-3 rounded-xl hidden border border-purple-100 leading-relaxed">
+
+                            <div class="space-y-2 pt-2">
+                                <label class="block text-sm font-bold text-gray-500">遊戲題目 JSON 預覽</label>
+                                <div class="relative group">
+                                    <textarea id="output-questions-json" rows="8"
+                                        class="w-full p-3 rounded-xl input-stylish text-[10px] font-mono bg-gray-900 text-green-400 shadow-inner"
+                                        placeholder='{"map": [...], "questions": {...}}'></textarea>
+                                    <button onclick="copyToClipboard('output-questions-json')"
+                                        class="absolute top-2 right-2 px-2 py-1 bg-gray-700 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity">複製</button>
                                 </div>
                             </div>
                         </div>
                     </div>
+                </section>
+
+                <!-- 進階設定 (原本的第 4 步與程式碼輸出) -->
+                <div class="mt-4">
+                    <button onclick="document.getElementById('advanced-area').classList.toggle('hidden')"
+                        class="text-indigo-300 text-sm font-bold hover:text-white transition-all flex items-center gap-1">
+                        ⚙️ 進階設定 (資源路徑與原始碼) <span class="text-[10px]">▼</span>
+                    </button>
+
+                    <div id="advanced-area" class="hidden mt-4 space-y-6">
+                        <section class="glass-card p-6">
+                            <h2 class="text-xl font-bold text-indigo-900 mb-6 border-b pb-3 border-indigo-100">📦 資源配置路徑
+                            </h2>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="space-y-4">
+                                    <h3 class="text-xs font-extrabold uppercase tracking-widest text-indigo-400">主要資源
+                                        (img/)</h3>
+                                    <div class="space-y-2">
+                                        <div class="flex items-center gap-2">
+                                            <label class="w-16 text-[10px] font-bold text-indigo-800">地圖背景</label>
+                                            <input type="text" id="img-mapBg" value="map_background.png"
+                                                class="flex-1 p-1.5 bg-white rounded-lg text-[10px] border border-indigo-100">
+                                            <img id="prev-mapBg" class="w-8 h-8 rounded border bg-gray-100 object-cover"
+                                                src="">
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <label class="w-16 text-[10px] font-bold text-indigo-800">嚮導 NPC</label>
+                                            <input type="text" id="img-guideNPC" value="guide_bear.png"
+                                                class="flex-1 p-1.5 bg-white rounded-lg text-[10px] border border-indigo-100">
+                                            <img id="prev-guideNPC"
+                                                class="w-8 h-8 rounded border bg-gray-100 object-cover" src="">
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <label class="w-16 text-[10px] font-bold text-indigo-800">載入動畫</label>
+                                            <input type="text" id="img-loadingGif" value="loading_bear.gif"
+                                                class="flex-1 p-1.5 bg-white rounded-lg text-[10px] border border-indigo-100">
+                                            <img id="prev-loadingGif"
+                                                class="w-8 h-8 rounded border bg-gray-100 object-cover" src="">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="space-y-4">
+                                    <h3 class="text-xs font-extrabold uppercase tracking-widest text-indigo-400">音效
+                                        (sound/)</h3>
+                                    <div class="grid grid-cols-1 gap-2">
+                                        <div class="flex items-center gap-2">
+                                            <input type="text" id="sfx-bgm" placeholder="背景音樂 BGM"
+                                                class="flex-1 p-1.5 bg-white rounded-lg text-[10px] border border-indigo-100">
+                                            <button
+                                                onclick="generateAIMusic('sfx-bgm', 'upbeat lo-fi game background music')"
+                                                class="w-8 h-8 flex items-center justify-center bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 font-bold"
+                                                title="AI 生成音樂">🪄</button>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <input type="text" id="sfx-click" placeholder="點擊音效 Click"
+                                                class="flex-1 p-1.5 bg-white rounded-lg text-[10px] border border-indigo-100">
+                                            <button
+                                                onclick="generateAISFX('sfx-click', 'short subtle interface click sound')"
+                                                class="w-8 h-8 flex items-center justify-center bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 font-bold"
+                                                title="AI 生成">🪄</button>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <input type="text" id="sfx-dice" placeholder="骰子音效 Dice"
+                                                class="flex-1 p-1.5 bg-white rounded-lg text-[10px] border border-indigo-100">
+                                            <button
+                                                onclick="generateAISFX('sfx-dice', 'rolling dice on wooden table sound')"
+                                                class="w-8 h-8 flex items-center justify-center bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 font-bold"
+                                                title="AI 生成">🪄</button>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <input type="text" id="sfx-move" placeholder="移動音效 Move"
+                                                class="flex-1 p-1.5 bg-white rounded-lg text-[10px] border border-indigo-100">
+                                            <button
+                                                onclick="generateAISFX('sfx-move', 'fast magic character whoosh or movement sound')"
+                                                class="w-8 h-8 flex items-center justify-center bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 font-bold"
+                                                title="AI 生成">🪄</button>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <input type="text" id="sfx-success" placeholder="成功音效 Success"
+                                                class="flex-1 p-1.5 bg-white rounded-lg text-[10px] border border-indigo-100">
+                                            <button
+                                                onclick="generateAISFX('sfx-success', 'celebratory success fanfare magic sound')"
+                                                class="w-8 h-8 flex items-center justify-center bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 font-bold"
+                                                title="AI 生成">🪄</button>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <input type="text" id="sfx-fail" placeholder="失敗音效 Fail"
+                                                class="flex-1 p-1.5 bg-white rounded-lg text-[10px] border border-indigo-100">
+                                            <button
+                                                onclick="generateAISFX('sfx-fail', 'funny failure game over sound short')"
+                                                class="w-8 h-8 flex items-center justify-center bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 font-bold"
+                                                title="AI 生成">🪄</button>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <input type="text" id="sfx-complete" placeholder="通關音效 Complete"
+                                                class="flex-1 p-1.5 bg-white rounded-lg text-[10px] border border-indigo-100">
+                                            <button
+                                                onclick="generateAISFX('sfx-complete', 'grand orchestral completion achievement sound')"
+                                                class="w-8 h-8 flex items-center justify-center bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 font-bold"
+                                                title="AI 生成">🪄</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="md:col-span-2 space-y-4">
+                                    <h3 class="text-xs font-extrabold uppercase tracking-widest text-indigo-400">角色頭像
+                                    </h3>
+                                    <div id="avatar-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                                    <button onclick="addAvatarRow()"
+                                        class="w-full py-1.5 bg-white border border-dashed border-indigo-200 rounded-lg text-[10px] text-indigo-400 font-bold hover:bg-indigo-50 transition-all">＋
+                                        新增頭像</button>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="glass-card p-6">
+                            <h2 class="text-xl font-bold text-indigo-900 mb-4 border-b pb-3 border-indigo-100">📄 原始碼輸出
+                            </h2>
+                            <div class="space-y-4">
+                                <div class="space-y-1">
+                                    <span class="text-[10px] font-bold text-gray-500 uppercase">theme.js</span>
+                                    <textarea id="output-theme-js"
+                                        class="w-full h-40 p-3 bg-gray-900 text-green-400 rounded-xl text-[10px] font-mono"
+                                        readonly></textarea>
+                                </div>
+                                <div class="space-y-1">
+                                    <span class="text-[10px] font-bold text-gray-500 uppercase">theme_list.js 片段</span>
+                                    <textarea id="output-list-js"
+                                        class="w-full h-20 p-3 bg-gray-900 text-green-400 rounded-xl text-[10px] font-mono"
+                                        readonly></textarea>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                </div>
             </div>
-            </section>
-        </div>
-
-        <!-- Right Side: Preview & Assets -->
-        <div class="space-y-8">
-            <!-- 資源設定 -->
-            <section class="glass-card p-6">
-                <h2 class="text-xl font-bold text-indigo-900 mb-6 border-b pb-3 border-indigo-100">📦 資源配置</h2>
-                <div class="space-y-6">
-                    <div class="bg-indigo-50/50 p-4 rounded-xl space-y-3">
-                        <h3 class="text-xs font-extrabold uppercase tracking-widest text-indigo-400">主要資源 (img/)
-                        </h3>
-                        <div class="space-y-2">
-                            <div class="flex flex-col"><span
-                                    class="text-[10px] font-bold text-indigo-800">地圖背景</span><input type="text"
-                                    id="img-mapBg" value="map_background.png"
-                                    class="w-full p-2 bg-white rounded-lg text-xs border border-indigo-100"></div>
-                            <div class="flex flex-col"><span class="text-[10px] font-bold text-indigo-800">嚮導
-                                    NPC</span><input type="text" id="img-guideNPC" value="guide_bear.png"
-                                    class="w-full p-2 bg-white rounded-lg text-xs border border-indigo-100"></div>
-                            <div class="flex flex-col"><span
-                                    class="text-[10px] font-bold text-indigo-800">載入動畫</span><input type="text"
-                                    id="img-loadingGif" value="loading_bear.gif"
-                                    class="w-full p-2 bg-white rounded-lg text-xs border border-indigo-100"></div>
-                        </div>
-                    </div>
-
-                    <div class="bg-indigo-50/50 p-4 rounded-xl space-y-3">
-                        <div class="flex justify-between items-center">
-                            <h3 class="text-xs font-extrabold uppercase tracking-widest text-indigo-400">角色頭像</h3>
-                            <button onclick="addAvatarRow()"
-                                class="text-xs bg-indigo-200 px-2 py-1 rounded-md font-bold text-indigo-700 hover:bg-indigo-300">＋</button>
-                        </div>
-                        <div id="avatar-list" class="space-y-2 max-h-40 overflow-y-auto pr-1"></div>
-                    </div>
-
-                    <div class="bg-indigo-50/50 p-4 rounded-xl space-y-3">
-                        <h3 class="text-xs font-extrabold uppercase tracking-widest text-indigo-400">音效 (留空使用預設)
-                        </h3>
-                        <div class="grid grid-cols-1 gap-2">
-                            <input type="text" id="sfx-bgm" placeholder="背景音樂 BGM"
-                                class="w-full p-2 bg-white rounded-lg text-xs border border-indigo-100">
-                            <input type="text" id="sfx-complete" placeholder="通關音效 Complete"
-                                class="w-full p-2 bg-white rounded-lg text-xs border border-indigo-100">
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- 程式碼輸出 (摺疊) -->
-            <section class="glass-card p-6 overflow-hidden">
-                <button onclick="toggleCodeView()"
-                    class="w-full flex justify-between items-center text-sm font-bold text-indigo-900 group">
-                    <span>📄 查看原始碼</span>
-                    <span id="code-toggle-icon" class="group-hover:translate-x-1 transition-transform">→</span>
-                </button>
-                <div id="code-view" class="mt-4 space-y-4 hidden animate-in fade-in duration-300">
-                    <div class="space-y-1">
-                        <span class="text-[10px] font-bold text-gray-500 uppercase">theme.js</span>
-                        <textarea id="output-theme-js"
-                            class="w-full h-40 p-3 bg-gray-900 text-green-400 rounded-xl text-[10px] font-mono"
-                            readonly></textarea>
-                    </div>
-                    <div class="space-y-1">
-                        <span class="text-[10px] font-bold text-gray-500 uppercase">theme_list.js 插入片段</span>
-                        <textarea id="output-list-js"
-                            class="w-full h-20 p-3 bg-gray-900 text-green-400 rounded-xl text-[10px] font-mono"
-                            readonly></textarea>
-                    </div>
-                </div>
-            </section>
         </div>
     </div>
     </div>
@@ -346,7 +498,17 @@
             <h3 class="text-2xl font-bold text-indigo-900 mb-6 flex items-center gap-2">🤖 AI 設定</h3>
             <div class="space-y-4">
                 <div class="space-y-2">
-                    <label class="text-sm font-bold">Google Gemini API Key</label>
+                    <label class="text-sm font-bold text-indigo-900 flex items-center gap-2">
+                        <img src="https://elevenlabs.io/favicon.ico" class="w-4 h-4"> ElevenLabs API Key (音效與音樂)
+                    </label>
+                    <input type="password" id="ai-eleven-key" placeholder="貼上你的 ElevenLabs Key"
+                        class="w-full p-3 rounded-xl border border-indigo-100 bg-gray-50 focus:bg-white outline-none">
+                    <p class="text-[10px] text-gray-400">用於生成高品質主題音效與背景音樂（選填）。</p>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-sm font-bold text-indigo-900 flex items-center gap-2">
+                        🤖 Google Gemini API Key
+                    </label>
                     <input type="password" id="ai-api-key" placeholder="貼上你的 API Key"
                         class="w-full p-3 rounded-xl border border-indigo-100 bg-gray-50 focus:bg-white outline-none">
                     <p class="text-[10px] text-gray-500">金鑰將儲存在您的瀏覽器中 (LocalStorage)。</p>
@@ -361,14 +523,42 @@
         </div>
     </div>
 
-    <!-- Loading Overlay -->
     <div id="loading-overlay"
         class="fixed inset-0 bg-white/50 backdrop-blur-md flex flex-col items-center justify-center z-[200] hidden">
         <div class="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4"></div>
         <div id="loading-text" class="text-indigo-900 font-bold animate-pulse text-lg">AI 正在思考中...</div>
     </div>
 
-    <script>
+    <!-- 雲端主題清單 Modal -->
+    <div id="cloud-themes-modal"
+        class="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-[100] hidden backdrop-blur-sm">
+        <div class="glass-card bg-white p-8 w-full max-w-2xl shadow-2xl flex flex-col max-h-[80vh]">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-indigo-900">📂 選擇現有雲端主題</h3>
+                <button onclick="document.getElementById('cloud-themes-modal').classList.add('hidden')"
+                    class="text-gray-400 hover:text-gray-600 text-2xl">✖</button>
+            </div>
+            <div id="cloud-themes-list" class="flex-grow overflow-y-auto space-y-3 pr-2">
+                <!-- 由 JS 動態注入 -->
+                <div class="text-center py-10 text-gray-400">正在讀取清單...</div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { FIREBASE_CONFIG } from '../global_config.js';
+
+        // --- Firebase 初始化 ---
+        firebase.initializeApp(FIREBASE_CONFIG);
+        const db = firebase.database();
+        const storage = firebase.storage();
+        const auth = firebase.auth();
+
+        // 匿名登入以確保雲端發佈權限 (不需要使用者介入)
+        auth.signInAnonymously().catch(err => {
+            console.error("Firebase Auth Error:", err);
+        });
+
         // --- 全域變數 ---
         let coordinates = [];
         const dom = {
@@ -385,44 +575,6 @@
             { key: 'buffalo', file: 'avatar_buffalo.png' }, { key: 'magpie', file: 'avatar_magpie.png' }
         ];
 
-        // --- 初始化 ---
-        function init() {
-            // 載入預設頭像
-            defaultAvatars.forEach(a => addAvatarRow(a.key, a.file));
-
-            // 地圖上傳處理
-            document.getElementById('map-upload').addEventListener('change', e => {
-                const f = e.target.files[0]; if (!f) return;
-                const r = new FileReader(); r.onload = ev => {
-                    dom.mapImg.src = ev.target.result;
-                    coordinates = []; updatePoints(); generateAll();
-                }; r.readAsDataURL(f);
-            });
-
-            // 座標點擊處理
-            dom.pointsLayer.addEventListener('click', e => {
-                const limit = 20;
-                if (coordinates.length >= limit) return alert(`已達 ${limit} 個點的上限`);
-                const r = dom.mapContainer.getBoundingClientRect();
-                const top = ((e.clientY - r.top) / r.height * 100).toFixed(1) + "%";
-                const left = ((e.clientX - r.left) / r.width * 100).toFixed(1) + "%";
-                coordinates.push({ t: top, l: left });
-                updatePoints(); generateAll();
-            });
-
-            // 复原上一點
-            dom.undoBtn.onclick = () => { coordinates.pop(); updatePoints(); generateAll(); };
-
-            // 自動更新
-            document.querySelectorAll('input, textarea').forEach(el => {
-                el.addEventListener('input', generateAll);
-            });
-
-            // 預載 API Key
-            document.getElementById('ai-api-key').value = localStorage.getItem('GEMINI_API_KEY') || '';
-
-            generateAll();
-        }
 
         // --- 地圖座標 ---
         function updatePoints() {
@@ -441,15 +593,47 @@
         // --- 資源與頭像 ---
         function addAvatarRow(k = '', f = '') {
             const div = document.createElement('div');
-            div.className = 'flex gap-2 avatar-row group';
+            // 使用 flex 排列，背景色稍微深一點以便區隔
+            div.className = 'flex gap-3 avatar-row p-3 bg-white/60 border border-indigo-50 rounded-2xl items-center shadow-sm hover:shadow-md transition-all relative group';
             div.innerHTML = `
-                <input type="text" placeholder="key" class="w-1/3 p-1.5 bg-white border border-indigo-50 rounded-lg text-[10px] avatar-key focus:ring-1 ring-indigo-300 outline-none" value="${k}">
-                <input type="text" placeholder="file" class="w-2/3 p-1.5 bg-white border border-indigo-50 rounded-lg text-[10px] avatar-file focus:ring-1 ring-indigo-300 outline-none" value="${f}">
-                <button onclick="this.parentElement.remove(); generateAll();" class="text-red-400 opacity-0 group-hover:opacity-100 transition-opacity">✖</button>
+                <div class="flex-shrink-0 relative">
+                    <img class="w-12 h-12 rounded-xl border-2 border-white bg-gray-100 object-cover avatar-prev shadow-sm" src="${f.startsWith('http') ? f : 'img/' + f}">
+                </div>
+                <div class="flex-grow space-y-2">
+                    <div class="flex items-center gap-2">
+                        <span class="text-[9px] font-bold text-indigo-400 w-12 uppercase flex-shrink-0">ID 識別碼</span>
+                        <input type="text" placeholder="例如: bear" class="flex-grow p-1.5 bg-white/80 border border-indigo-50 rounded-lg text-[10px] avatar-key focus:ring-1 ring-indigo-300 outline-none" value="${k}">
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[9px] font-bold text-indigo-400 w-12 uppercase flex-shrink-0">圖片路徑</span>
+                        <input type="text" placeholder="網址或檔名" class="flex-grow p-1.5 bg-white/80 border border-indigo-50 rounded-lg text-[10px] avatar-file focus:ring-1 ring-indigo-300 outline-none" value="${f}">
+                    </div>
+                </div>
+                <button onclick="this.parentElement.remove(); generateAll();" 
+                    class="flex-shrink-0 w-8 h-8 flex items-center justify-center bg-red-50 text-red-500 rounded-full hover:bg-red-500 hover:text-white transition-all shadow-sm ml-1"
+                    title="刪除此頭像">✖</button>
             `;
-            div.querySelectorAll('input').forEach(i => i.addEventListener('input', generateAll));
+            const fileInput = div.querySelector('.avatar-file');
+            const prevImg = div.querySelector('.avatar-prev');
+            fileInput.addEventListener('input', () => {
+                const val = fileInput.value.trim();
+                prevImg.src = val.startsWith('http') ? val : (val ? 'img/' + val : '');
+                generateAll();
+            });
+            div.querySelector('.avatar-key').addEventListener('input', generateAll);
             document.getElementById('avatar-list').appendChild(div);
         }
+
+        // --- AI 功能 ---
+        function saveAISettings() {
+            const geminiKey = document.getElementById('ai-api-key').value.trim();
+            const elevenKey = document.getElementById('ai-eleven-key').value.trim();
+            localStorage.setItem('GEMINI_API_KEY', geminiKey);
+            localStorage.setItem('ELEVENLABS_API_KEY', elevenKey);
+            document.getElementById('ai-settings-modal').classList.add('hidden');
+            alert("✅ AI 設定已儲存成功！");
+        }
+        window.saveAISettings = saveAISettings; // 確保可在 HTML onclick 中呼叫
 
         // --- 核心 logic ---
         function getVal(id) { return (document.getElementById(id)?.value || '').trim(); }
@@ -460,18 +644,32 @@
         function getList(id) { return getVal(id).split('\n').filter(x => x.trim()).map(x => `"${x.trim().replace(/"/g, '\\"')}"`).join(',\n            '); }
         function getSFX(id) {
             const v = getVal(id); if (!v) return null;
-            return v.includes(',') ? `[${v.split(',').map(s => `"${"sound/" + s.trim()}"`).join(', ')}]` : `["sound/${v}"]`;
+            const fix = (s) => (s.startsWith('http') || s.startsWith('data:')) ? s : "sound/" + s;
+            return v.includes(',') ? `[${v.split(',').map(s => `"${fix(s.trim())}"`).join(', ')}]` : `["${fix(v)}"]`;
         }
 
         function generateAll() {
             const tid = getVal('theme-id') || 'new_theme';
+
+            // 更新非頭像資源預覽
+            const updatePrev = (id, prevId) => {
+                const val = getVal(id);
+                const el = document.getElementById(prevId);
+                if (el) el.src = val.startsWith('http') ? val : (val ? 'img/' + val : '');
+            };
+            updatePrev('img-mapBg', 'prev-mapBg');
+            updatePrev('img-guideNPC', 'prev-guideNPC');
+            updatePrev('img-loadingGif', 'prev-loadingGif');
 
             // 產生頭像字串
             let avStr = [];
             document.querySelectorAll('.avatar-row').forEach(r => {
                 const k = r.querySelector('.avatar-key').value.trim();
                 const f = r.querySelector('.avatar-file').value.trim();
-                if (k && f) avStr.push(`        "${k}": "img/${f}"`);
+                if (k && f) {
+                    const path = f.startsWith('http') ? f : `img/${f}`;
+                    avStr.push(`        "${k}": "${path}"`);
+                }
             });
 
             // 產生座標字串
@@ -531,13 +729,6 @@ ${sfxArr.join(',\n')}
             document.getElementById('output-list-js').value = listEntry;
         }
 
-        // --- AI 功能 ---
-        function saveAISettings() {
-            const key = document.getElementById('ai-api-key').value.trim();
-            localStorage.setItem('GEMINI_API_KEY', key);
-            document.getElementById('ai-settings-modal').classList.add('hidden');
-        }
-
         async function aiCall(prompt) {
             const apiKey = localStorage.getItem('GEMINI_API_KEY');
             if (!apiKey) {
@@ -548,21 +739,43 @@ ${sfxArr.join(',\n')}
 
             showLoading(true, "AI 正在發想內容...");
             try {
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+                // 使用經測試證明最相容的 2.0-flash 模型與 v1 端點
+                const url = `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
                 const response = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        contents: [{ parts: [{ text: prompt }] }],
-                        generationConfig: { response_mime_type: "application/json" }
+                        contents: [{ parts: [{ text: prompt + " \n\n請務必僅以純 JSON 格式回答，不要有其他解釋文字。" }] }]
                     })
                 });
+
                 const data = await response.json();
-                const text = data.candidates[0].content.parts[0].text;
-                return JSON.parse(text);
+
+                if (!response.ok) {
+                    throw new Error(data.error?.message || `API Error: ${response.status}`);
+                }
+
+                if (!data.candidates || data.candidates.length === 0) {
+                    // Check if there's a safety filter reason
+                    const reason = data.promptFeedback?.blockReason || "找不到候選答案 (可能是被安全過濾器阻擋)";
+                    throw new Error(reason);
+                }
+
+                let text = data.candidates[0]?.content?.parts?.[0]?.text;
+                if (!text) throw new Error("API 回傳內容結構不正確");
+
+                // 清理可能包含的 Markdown JSON 區塊
+                text = text.replace(/```json\n?/, '').replace(/\n?```/, '').trim();
+
+                try {
+                    return JSON.parse(text);
+                } catch (parseErr) {
+                    console.error("JSON Parse Error. Content:", text);
+                    throw new Error("AI 回傳的格式不符合 JSON，請再試一次。");
+                }
             } catch (err) {
-                console.error(err);
-                alert("AI 呼叫失敗，請檢查 API Key 或網路。" + err.message);
+                console.error("AI Call Failed:", err);
+                alert("🤖 AI 呼叫失敗：\n" + err.message);
                 return null;
             } finally {
                 showLoading(false);
@@ -606,94 +819,561 @@ ${sfxArr.join(',\n')}
         }
 
         async function aiGenerateQuestions() {
+            const count = coordinates.length;
+            if (count === 0) return alert("請先在上方地圖點擊標註至少一個地點，AI 才能為您取名並製作題目。");
+
             const base = getVal('theme-name');
-            const prompt = `你是一個大富翁題目專家。請針對主題「${base}」，生成 20 個題目與選項。
+            const topic = document.getElementById('ai-questions-topic').value.trim();
+            const topicConstraint = topic ? `\n特別針對以下教學內容或重點生成：\n${topic}\n` : '';
+
+            const prompt = `你是一個互動式大富翁遊戲設計專家。請針對主題「${base}」${topicConstraint}，生成 ${count} 個地點與對應的四選一單選題。
             輸出格式必須是純 JSON，結構如下：
             {
                 "map": [
                     {"city": "地點名稱1", "questionId": "q1", "isMustHit": false},
-                    ... (共 20 個地點)
+                    ... (共 ${count} 個地點)
                 ],
                 "questions": {
                     "q1": {"text": "題目內容", "options": ["選項1", "選項2", "選項3", "選項4"], "answer": 1},
-                    ... (共 20 個題目, answer 是 1-4 的數字)
+                    ... (共 ${count} 個題目, answer 是 1-4 的數字)
                 }
             }
-            請確保題目與主題高度相關且有趣。`;
+            請確保內容豐富、有趣且符合繁體中文習慣。`;
             const result = await aiCall(prompt);
             if (result) {
                 document.getElementById('output-questions-json').value = JSON.stringify(result, null, 2);
+                alert("遊戲題目集生成成功！已套用於本地與雲端發佈區。");
             }
         }
 
-        async function aiGenerateImagePrompts() {
+        async function generateAIImage(promptSourceId, targetImgId, targetIdInputId) {
+            const prompt = document.getElementById(promptSourceId).value.trim();
+            if (!prompt) return alert("請先生成 AI 提示詞！");
+
+            showLoading(true, "正在繪製圖像 (Pollinations.ai)...");
+            try {
+                // Pollinations.ai 直接生成 URL
+                const seed = Math.floor(Math.random() * 10000);
+                const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1024&height=1024&seed=${seed}&nologo=true`;
+
+                // 預載圖片確認成功
+                const img = new Image();
+                img.crossOrigin = "anonymous";
+                img.onload = () => {
+                    if (targetImgId) document.getElementById(targetImgId).src = imageUrl;
+                    if (targetIdInputId) document.getElementById(targetIdInputId).value = imageUrl;
+                    showLoading(false);
+                    generateAll();
+                };
+                img.onerror = () => {
+                    throw new Error("圖片載入失敗，請換個提示詞再試一次。");
+                };
+                img.src = imageUrl;
+            } catch (err) {
+                alert("生圖失敗: " + err.message);
+                showLoading(false);
+            }
+        }
+
+        async function aiGeneratePrompts() {
             const base = getVal('theme-name');
-            const prompt = `針對遊戲主題「${base}」，生成地圖背景圖 (map_background.png) 與 嚮導 NPC (guide_bear.png) 的 AI 繪圖提示詞 (Prompts)。
-            提示詞請使用英文，並包含風格描述（如: vibrant, vector art, isometric, cute etc.）。
-            輸出格式： { "mapPrompt": "...", "npcPrompt": "..." }`;
+            const prompt = `你是一個資深遊戲美術指導。針對大富翁遊戲主題「${base}」，生成以下資源的 AI 繪圖/影片/音樂提示詞 (Prompts)：
+            1. 地圖背景圖 (Map Background): 包含豐富的地理元素與風格描述。
+            2. 嚮導角色 (Guide NPC): 描述角色外觀、神態與服裝。
+            3. 載入頁影片動畫 (Loading Video): 針對 Luma/Runway 影片生成器的提示詞，強調動態感(如: "cinematic slow motion, shimmering particles, character walking towards camera")。
+            4. 四個不同的角色頭像 (4 character avatars): 針對頭像設計。
+            5. 背景音樂 (BGM) 風格標籤: 給 Suno/Mubert 的風格標籤 (如: "Lo-fi, Adventurous, 8-bit, Cinematic, orchestral")。
+            提示詞請使用「英文」撰寫。
+            輸出 JSON 格式： { 
+                "map": "...", 
+                "npc": "...", 
+                "loading": "...", 
+                "avatar": "shared avatar style prompt",
+                "avatars": ["p1", "p2", "p3", "p4"],
+                "bgm": "BGM style tags here"
+            }`;
+
             const result = await aiCall(prompt);
             if (result) {
-                const el = document.getElementById('ai-img-prompts');
-                el.innerHTML = `<strong>Map:</strong> ${result.mapPrompt}<br><br><strong>NPC:</strong> ${result.npcPrompt}`;
-                el.classList.remove('hidden');
+                document.getElementById('prompt-map').value = result.map;
+                document.getElementById('prompt-npc').value = result.npc;
+                document.getElementById('prompt-loading').value = result.loading;
+                document.getElementById('prompt-avatar').value = result.avatar;
+                // 存儲頭像組以便後續使用
+                window.AI_AVATAR_PROMPTS = result.avatars;
+
+                document.getElementById('ai-prompts-output').innerHTML = `
+                    <div class="mb-4 text-purple-900 font-extrabold border-b border-purple-200 pb-2 text-base">✨ AI 美術提案內容</div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="p-3 bg-purple-50/50 rounded-xl"><strong class="text-[10px] text-purple-400 uppercase">Map Background</strong><p class="text-xs mt-1 italic">"${result.map}"</p></div>
+                        <div class="p-3 bg-purple-50/50 rounded-xl"><strong class="text-[10px] text-purple-400 uppercase">NPC Guide</strong><p class="text-xs mt-1 italic">"${result.npc}"</p></div>
+                        <div class="p-3 bg-purple-50/50 rounded-xl"><strong class="text-[10px] text-purple-400 uppercase">Loading Anim</strong><p class="text-xs mt-1 italic">"${result.loading}"</p></div>
+                        <div class="p-3 bg-purple-50/50 rounded-xl"><strong class="text-[10px] text-purple-400 uppercase">Music Tags</strong><p class="text-xs mt-1 italic">"${result.bgm}"</p></div>
+                    </div>
+                `;
+                document.getElementById('ai-prompts-output').classList.remove('hidden');
+                document.getElementById('prompts-control').classList.remove('hidden');
+                document.getElementById('btn-gen-map').disabled = false;
+                document.getElementById('btn-gen-map').title = "根據目前的地圖提示詞生成背景";
+                alert("AI 提示詞生成完畢！您可以繼續下一步生成地圖，或生成 NPC/頭像。");
             }
         }
 
-        // --- 儲存至專案 ---
-        async function saveToProject() {
-            if (coordinates.length < 20) return alert("地圖座標點還沒設定滿 20 個！");
+        async function generateAIAvatars() {
+            const basePrompt = document.getElementById('prompt-avatar').value;
+            const specifics = window.AI_AVATAR_PROMPTS || [];
+            if (!basePrompt || specifics.length === 0) return alert("請先生成 AI 提示詞！");
 
-            showLoading(true, "正在儲存至專案目錄...");
-            const payload = {
-                id: getVal('theme-id'),
-                name: getVal('theme-name'),
-                description: getVal('theme-desc'),
-                themeJs: document.getElementById('output-theme-js').value,
-                themeListJs: document.getElementById('output-list-js').value,
-                questionsJson: document.getElementById('output-questions-json').value
-            };
-
+            showLoading(true, "正在生成角色頭像組...");
             try {
-                const res = await fetch('/api/save-theme', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const data = await res.json();
-                if (data.success) {
-                    alert("✅ 儲存成功！\n主題已加入 modules 資料夾，並更新了 theme_list.js。\n現在可以回主頁面看結果了！");
-                } else {
-                    throw new Error(data.error);
+                const avatarList = document.getElementById('avatar-list');
+                const existingRows = avatarList.querySelectorAll('.avatar-row').length;
+
+                for (let i = 0; i < specifics.length; i++) {
+                    const fullPrompt = `${specifics[i]}, ${basePrompt}`;
+                    const seed = Math.floor(Math.random() * 100000);
+                    const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(fullPrompt)}?width=512&height=512&seed=${seed}&nologo=true`;
+
+                    // 新增一列，編號延續現有數量
+                    const key = `char_${existingRows + i + 1}`;
+                    addAvatarRow(key, url);
                 }
+                alert(`✅ 新增了 ${specifics.length} 位角色！目前共有 ${avatarList.querySelectorAll('.avatar-row').length} 位。`);
+                generateAll();
             } catch (err) {
-                alert("❌ 儲存失敗：" + err.message + "\n(請確認是否正啟動著 Vite 開發伺服器 npm run dev)");
+                alert("頭像生成失敗: " + err.message);
             } finally {
                 showLoading(false);
             }
         }
+
+        async function generateAISFX(inputId, defaultText) {
+            const apiKey = localStorage.getItem('ELEVENLABS_API_KEY');
+            if (!apiKey) {
+                alert("請先設定 ElevenLabs API Key！");
+                document.getElementById('ai-settings-modal').classList.remove('hidden');
+                return;
+            }
+
+            const themeName = getVal('theme-name') || 'fantasy game';
+            const userPrompt = window.prompt(`【AI 音效生成】請修正或輸入提示詞：`, `A ${defaultText} for a ${themeName} themed game`);
+            if (!userPrompt) return;
+
+            showLoading(true, "正在透過 ElevenLabs 生成音效...");
+            try {
+                const url = "https://api.elevenlabs.io/v1/sound-generation";
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'xi-api-key': apiKey,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        text: userPrompt,
+                        duration_seconds: 5, // 最長 30 秒
+                        prompt_influence: 0.3
+                    })
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json();
+                    throw new Error(errData.detail?.message || "生成失敗");
+                }
+
+                const audioBlob = await response.blob();
+                const tid = getVal('theme-id') || 'temp';
+
+                // 上傳至 Firebase Storage 確保網址永久可用
+                const downloadUrl = await uploadFile(audioBlob, `themes/${tid}/sfx`, `${inputId}_${Date.now()}.mp3`);
+
+                document.getElementById(inputId).value = downloadUrl;
+                alert("✅ 音效生成並上傳成功！");
+                generateAll();
+            } catch (err) {
+                console.error("SFX Generation Error:", err);
+                alert("❌ 音效生成失敗：" + err.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function generateAIMusic(inputId, defaultText) {
+            const apiKey = localStorage.getItem('ELEVENLABS_API_KEY');
+            if (!apiKey) {
+                alert("請先設定 ElevenLabs API Key！");
+                document.getElementById('ai-settings-modal').classList.remove('hidden');
+                return;
+            }
+
+            const themeName = getVal('theme-name') || 'adventure game';
+            const userPrompt = window.prompt(`【AI 音樂生成】請修正或輸入音樂描述：`, `${defaultText} for a ${themeName} themed board game, looped, high quality`);
+            if (!userPrompt) return;
+
+            showLoading(true, "正在透過 ElevenLabs 生成背景音樂...");
+            try {
+                const url = "https://api.elevenlabs.io/v1/music";
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'xi-api-key': apiKey,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        prompt: userPrompt,
+                        music_length_ms: 30000 // ElevenLabs Music 使用 ms
+                    })
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json();
+                    throw new Error(errData.detail?.message || "生成失敗");
+                }
+
+                const audioBlob = await response.blob();
+                const tid = getVal('theme-id') || 'temp';
+
+                // 上傳至 Firebase Storage 確保網址永久可用
+                const downloadUrl = await uploadFile(audioBlob, `themes/${tid}/music`, `bgm_${Date.now()}.mp3`);
+
+                document.getElementById(inputId).value = downloadUrl;
+                alert("✅ 背景音樂生成並上傳成功！");
+                generateAll();
+            } catch (err) {
+                console.error("Music Generation Error:", err);
+                alert("❌ 音樂生成失敗：" + err.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        window.generateAIAvatars = generateAIAvatars;
+        window.generateAISFX = generateAISFX;
+        window.generateAIMusic = generateAIMusic;
+
+        // --- Firebase Helper ---
+        async function uploadFile(fileOrUrl, folder, filename) {
+            if (!fileOrUrl) return null;
+
+            // 如果已經是 Firebase Storage 的連結，直接傳回，避免 CORS fetch 問題
+            if (typeof fileOrUrl === 'string' && fileOrUrl.includes('firebasestorage.googleapis.com')) {
+                return fileOrUrl;
+            }
+
+            let blob;
+            if (typeof fileOrUrl === 'string' && fileOrUrl.startsWith('http')) {
+                try {
+                    const res = await fetch(fileOrUrl);
+                    if (!res.ok) throw new Error("Fetch failed");
+                    blob = await res.blob();
+                } catch (e) {
+                    console.error("CORS or Fetch error:", fileOrUrl);
+                    // 針對 Pollinations 等服務，若失敗則傳回原網址嘗試
+                    return fileOrUrl;
+                }
+            } else {
+                blob = fileOrUrl;
+            }
+            const name = filename || (blob.name ? `${Date.now()}_${blob.name}` : `${Date.now()}.png`);
+            const ref = storage.ref(`${folder}/${name}`);
+            const snapshot = await ref.put(blob);
+            return await snapshot.ref.getDownloadURL();
+        }
+
+
+
+        async function publishToCloud() {
+            if (coordinates.length === 0) return alert("地圖座標點至少要有一個！");
+
+            // 1. 身份驗證 (ZBP)
+            const code = prompt("【管理驗證】請輸入發佈代碼以繼續：");
+            if (code !== 'ZBP') {
+                alert("驗證錯誤，您沒有權限發佈至雲端。");
+                return;
+            }
+
+            showLoading(true, "正在準備雲端發佈...");
+            try {
+                const tid = getVal('theme-id');
+                const themeName = getVal('theme-name');
+
+                // 1. 處理檔案上傳 (包含 Pollinations URL 轉存)
+                let mapBgUrl = getVal('img-mapBg');
+                const mapFile = document.getElementById('map-upload').files[0];
+                if (mapFile) {
+                    mapBgUrl = await uploadFile(mapFile, `themes/${tid}/images`, 'map_bg.png');
+                } else if (mapBgUrl.startsWith('http')) {
+                    mapBgUrl = await uploadFile(mapBgUrl, `themes/${tid}/images`, 'map_bg.png');
+                }
+
+                let npcUrl = getVal('img-guideNPC');
+                if (npcUrl.startsWith('http')) {
+                    npcUrl = await uploadFile(npcUrl, `themes/${tid}/images`, 'npc.png');
+                }
+
+                let loadingUrl = getVal('img-loadingGif');
+                if (loadingUrl.startsWith('http')) {
+                    loadingUrl = await uploadFile(loadingUrl, `themes/${tid}/images`, 'loading.gif');
+                }
+
+                // 2. 處理頭像上傳
+                const avatars = {};
+                const avatarRows = document.querySelectorAll('.avatar-row');
+                for (const row of avatarRows) {
+                    const k = row.querySelector('.avatar-key').value.trim();
+                    let f = row.querySelector('.avatar-file').value.trim();
+                    if (k && f) {
+                        if (f.startsWith('http')) {
+                            f = await uploadFile(f, `themes/${tid}/avatars`, `${k}.png`);
+                        }
+                        avatars[k] = f;
+                    }
+                }
+
+                // 3. 準備設定檔
+                const themeConfig = {
+                    id: tid,
+                    name: themeName,
+                    description: getVal('theme-desc'),
+                    gasUrl: getVal('gas-url'),
+                    coordinates: coordinates,
+                    assets: {
+                        avatars: avatars,
+                        images: {
+                            guideNPC: npcUrl,
+                            loadingGif: loadingUrl,
+                            mapBg: mapBgUrl
+                        },
+                        text: {
+                            welcome: getVal('txt-welcome'),
+                            idleChats: getVal('txt-idle').split('\n').filter(x => x.trim()),
+                            adj: getVal('txt-adj').split('\n').filter(x => x.trim()),
+                            noun: getVal('txt-noun').split('\n').filter(x => x.trim())
+                        },
+                        SFX: {
+                            bgm: getVal('sfx-bgm'),
+                            click: getVal('sfx-click'),
+                            dice: getVal('sfx-dice'),
+                            move: getVal('sfx-move'),
+                            success: getVal('sfx-success'),
+                            fail: getVal('sfx-fail'),
+                            complete: getVal('sfx-complete')
+                        }
+                    }
+                };
+
+                // 4. 準備題目檔
+                let questionsData = JSON.parse(document.getElementById('output-questions-json').value);
+
+                // 5. 寫入 Database
+                await db.ref(`themes/${tid}`).set(themeConfig);
+                await db.ref(`questions/${tid}`).set(questionsData);
+                await db.ref(`available_themes/${tid}`).set({
+                    id: tid, name: themeName, description: getVal('theme-desc'), cover: mapBgUrl, isCloud: true
+                });
+
+                alert("✅ 雲端平台發佈成功！");
+            } catch (err) {
+                console.error(err);
+                alert("❌ 發佈失敗：" + err.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // --- 全域掛載 ---
+        async function openCloudThemesModal() {
+            const modal = document.getElementById('cloud-themes-modal');
+            const list = document.getElementById('cloud-themes-list');
+            modal.classList.remove('hidden');
+            list.innerHTML = '<div class="text-center py-10 text-gray-400">正在讀取雲端清單...</div>';
+
+            try {
+                const snapshot = await db.ref('available_themes').get();
+                if (!snapshot.exists()) {
+                    list.innerHTML = '<div class="text-center py-10 text-gray-400">目前沒有雲端主題</div>';
+                    return;
+                }
+                const themes = snapshot.val();
+                list.innerHTML = '';
+                Object.values(themes).forEach(t => {
+                    const item = document.createElement('div');
+                    item.className = "flex items-center justify-between p-4 bg-indigo-50 rounded-2xl hover:bg-indigo-100 transition-colors cursor-pointer group";
+                    item.innerHTML = `
+                        <div class="flex items-center gap-4">
+                            <img src="${t.cover}" class="w-12 h-12 rounded-lg object-cover bg-gray-200">
+                            <div>
+                                <div class="font-bold text-indigo-900">${t.name}</div>
+                                <div class="text-[10px] text-gray-500">${t.id}</div>
+                            </div>
+                        </div>
+                        <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onclick="loadThemeFromCloud('${t.id}')" class="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-bold">載入修改</button>
+                            <button onclick="deleteThemeFromCloud('${t.id}', '${t.name}')" class="px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-bold hover:bg-red-100">刪除</button>
+                        </div>
+                    `;
+                    list.appendChild(item);
+                });
+            } catch (err) {
+                list.innerHTML = `<div class="text-center py-10 text-red-400">讀取失敗：${err.message}</div>`;
+            }
+        }
+
+        async function loadThemeFromCloud(tid) {
+            showLoading(true, "正在從雲端載入資料...");
+            try {
+                const [themeSnap, qSnap] = await Promise.all([
+                    db.ref(`themes/${tid}`).get(),
+                    db.ref(`questions/${tid}`).get()
+                ]);
+
+                if (!themeSnap.exists()) throw new Error("找不到該主題的設定資料");
+                const config = themeSnap.val();
+                const questions = qSnap.val();
+
+                // 填入基本資訊
+                setVal('theme-id', config.id);
+                setVal('theme-name', config.name);
+                setVal('theme-desc', config.description);
+                setVal('gas-url', config.gasUrl || '');
+
+                // 填入地圖背景與 NPC
+                setVal('img-mapBg', config.assets.images.mapBg);
+                setVal('img-guideNPC', config.assets.images.guideNPC);
+                setVal('img-loadingGif', config.assets.images.loadingGif);
+                document.getElementById('map-preview').src = config.assets.images.mapBg;
+
+                // 填入文字資源
+                setVal('txt-welcome', config.assets.text.welcome);
+                setVal('txt-idle', (config.assets.text.idleChats || []).join('\n'));
+                setVal('txt-adj', (config.assets.text.adj || []).join('\n'));
+                setVal('txt-noun', (config.assets.text.noun || []).join('\n'));
+
+                // 填入座標
+                coordinates = (config.coordinates || []).map(c => ({ t: c.top || c.t, l: c.left || c.l }));
+                updatePoints();
+
+                // 填入頭像
+                const avatarList = document.getElementById('avatar-list');
+                avatarList.innerHTML = '';
+                for (let k in (config.assets.avatars || {})) {
+                    addAvatarRow(k, config.assets.avatars[k]);
+                }
+
+                // 填入音效與 BGM (支援新舊 Key)
+                const sfx = config.assets.SFX || config.assets.sfx || {};
+                setVal('sfx-bgm', sfx.bgm || sfx['sfx-bgm'] || '');
+                setVal('sfx-click', sfx.click || sfx['sfx-click'] || '');
+                setVal('sfx-dice', sfx.dice || sfx['sfx-dice'] || '');
+                setVal('sfx-move', sfx.move || sfx['sfx-move'] || '');
+                setVal('sfx-success', sfx.success || sfx['sfx-success'] || '');
+                setVal('sfx-fail', sfx.fail || sfx['sfx-fail'] || '');
+                setVal('sfx-complete', sfx.complete || sfx['sfx-complete'] || '');
+
+                // 填入題目
+                if (questions) {
+                    document.getElementById('output-questions-json').value = JSON.stringify(questions, null, 2);
+                }
+
+                document.getElementById('cloud-themes-modal').classList.add('hidden');
+                alert(`✅ 主題 「${config.name}」 載入成功！`);
+                generateAll();
+            } catch (err) {
+                alert("❌ 載入失敗：" + err.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function deleteThemeFromCloud(tid, tname) {
+            const code = prompt(`【管理授權】即將刪除主題「${tname} (${tid})」\n此動作無法還原，請輸入管理代碼：`);
+            if (code !== 'ZBP') return alert("驗證失敗，取消刪除。");
+
+            if (!confirm(`確定要徹底刪除主題「${tname}」嗎？`)) return;
+
+            showLoading(true, "正在刪除主題...");
+            try {
+                await Promise.all([
+                    db.ref(`themes/${tid}`).remove(),
+                    db.ref(`questions/${tid}`).remove(),
+                    db.ref(`available_themes/${tid}`).remove()
+                ]);
+                alert("✅ 主題已成功刪除。");
+                openCloudThemesModal(); // 重新整理清單
+            } catch (err) {
+                alert("❌ 刪除失敗：" + err.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        window.openCloudThemesModal = openCloudThemesModal;
+        window.loadThemeFromCloud = loadThemeFromCloud;
+        window.deleteThemeFromCloud = deleteThemeFromCloud;
+        window.publishToCloud = publishToCloud;
+        window.aiCompleteInfo = aiCompleteInfo;
+        window.aiGenerateChats = aiGenerateChats;
+        window.aiGenerateList = aiGenerateList;
+        window.aiGenerateQuestions = aiGenerateQuestions;
+        window.aiGeneratePrompts = aiGeneratePrompts;
+        window.generateAIImage = generateAIImage;
+        window.addAvatarRow = addAvatarRow;
+        window.saveAISettings = saveAISettings;
 
         // --- UI 小工具 ---
         function showLoading(show, text) {
             dom.overlay.classList.toggle('hidden', !show);
             if (text) dom.loadingText.textContent = text;
         }
-
-        function toggleCodeView() {
-            const target = document.getElementById('code-view');
-            const icon = document.getElementById('code-toggle-icon');
-            target.classList.toggle('hidden');
-            icon.style.transform = target.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(90deg)';
-        }
+        window.showLoading = showLoading;
 
         window.copyToClipboard = (id) => {
             const el = document.getElementById(id);
             el.select();
             document.execCommand('copy');
-            const originalText = el.placeholder;
             alert("已複製到剪貼簿！");
         };
 
-        init();
+        // --- 初始化 ---
+        function initThemeCreator() {
+            // 載入預設頭像
+            defaultAvatars.forEach(a => addAvatarRow(a.key, a.file));
+
+            // 地圖上傳處理
+            document.getElementById('map-upload').addEventListener('change', e => {
+                const f = e.target.files[0]; if (!f) return;
+                const r = new FileReader(); r.onload = ev => {
+                    dom.mapImg.src = ev.target.result;
+                    coordinates = []; updatePoints(); generateAll();
+                }; r.readAsDataURL(f);
+            });
+
+            // 座標點擊處理
+            dom.pointsLayer.addEventListener('click', e => {
+                const limit = 20;
+                if (coordinates.length >= limit) return alert(`已達 ${limit} 個點的上限`);
+                const r = dom.mapContainer.getBoundingClientRect();
+                const top = ((e.clientY - r.top) / r.height * 100).toFixed(1) + "%";
+                const left = ((e.clientX - r.left) / r.width * 100).toFixed(1) + "%";
+                coordinates.push({ t: top, l: left });
+                updatePoints(); generateAll();
+            });
+
+            // 复原上一點
+            dom.undoBtn.onclick = () => { coordinates.pop(); updatePoints(); generateAll(); };
+
+            // 自動更新
+            document.querySelectorAll('input, textarea').forEach(el => {
+                el.addEventListener('input', generateAll);
+            });
+
+            // 預載 API Key
+            document.getElementById('ai-api-key').value = localStorage.getItem('GEMINI_API_KEY') || '';
+            document.getElementById('ai-eleven-key').value = localStorage.getItem('ELEVENLABS_API_KEY') || '';
+
+            generateAll();
+        }
+
+        initThemeCreator();
     </script>
 </body>
 

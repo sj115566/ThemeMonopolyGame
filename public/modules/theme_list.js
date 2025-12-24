@@ -24,12 +24,12 @@ window.AVAILABLE_THEMES = [
         description: " <b><i> Formosa's Economic Journey </i></b> \n 跟著時光郵差，一起穿越時空，見證福爾摩沙的經濟奇蹟！",
         cover: "img/map_background.png"
     },
-/*
-    {
-        id: "universe",
-        name: "🚀 太陽系探險",
-        description: "搭上太空船，前往未知的星球！",
-        cover: "img/space_bg.png"
-    }
-*/
+    /*
+        {
+            id: "universe",
+            name: "🚀 太陽系探險",
+            description: "搭上太空船，前往未知的星球！",
+            cover: "img/space_bg.png"
+        }
+    */
 ];

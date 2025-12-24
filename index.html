@@ -244,7 +244,7 @@
             #leaderboard-panel {
                 top: 16px !important;
                 left: 16px !important;
-                max-height: 40vh !important;
+                max-height: 70vh !important;
             }
 
             #player-info-bar {
@@ -268,22 +268,20 @@
 
     <!-- PART 1: 主題選擇器 -->
     <div id="theme-selector" class="fixed inset-0 z-[100] bg-gray-100 hidden">
-        <!-- 新增：返回首頁按鈕 (選填，若有外部首頁可用) -->
-        <button id="theme-back-btn"
-            class="absolute top-6 left-6 bg-white/80 hover:bg-white text-gray-600 p-3 rounded-2xl shadow-sm z-[110] transition-all flex items-center gap-2 font-bold border border-gray-200">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd"
-                    d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
-                    clip-rule="evenodd" />
-            </svg>
-            <span data-lang="btnBackMenu">回主選單</span>
-        </button>
         <div class="min-h-full p-6 md:p-10 flex flex-col items-center justify-center">
             <h1 class="text-3xl md:text-5xl font-extrabold text-gray-800 mb-8 mt-4 text-center tracking-tight"
                 data-lang="themeSelectorTitle">📚 請選擇複習主題</h1>
             <div id="theme-list" class="flex flex-wrap justify-center gap-8 w-full max-w-7xl pb-10">
                 <div class="text-center text-gray-500 animate-pulse text-xl w-full" data-lang="themeLoading">正在讀取主題列表...
                 </div>
+            </div>
+
+            <!-- 新增：主題創作按鈕 -->
+            <div class="mt-8">
+                <a href="./tool_theme_creator.html"
+                    class="flex items-center gap-2 bg-white px-6 py-3 rounded-2xl shadow-md hover:shadow-lg transition-all text-indigo-600 font-bold border border-indigo-100 hover:scale-105">
+                    🎨 創作新主題
+                </a>
             </div>
         </div>
     </div>
@@ -313,18 +311,18 @@
                 </svg>
             </button>
             <div id="leaderboard-panel"
-                class="ui-element absolute top-4 left-4 flex flex-col items-start z-40 max-h-[50vh] transition-all duration-300">
+                class="ui-element absolute top-4 left-4 flex flex-col items-start z-40 max-h-[85vh] transition-all duration-300">
                 <button id="leaderboard-toggle"
                     class="bg-white/90 backdrop-blur-md p-2 rounded-full shadow-lg mb-2 flex items-center justify-center w-12 h-12"><span
                         id="lb-icon" class="text-xl">✖️</span></button>
                 <div id="leaderboard-content"
-                    class="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl overflow-hidden w-64 flex flex-col transition-all origin-top-left">
+                    class="bg-white/90 backdrop-blur-md rounded-2xl shadow-xl overflow-hidden w-64 flex flex-col transition-all origin-top-left flex-1 min-h-0">
                     <div class="flex p-2 bg-gray-100/50 border-b border-gray-200"><button id="tab-live"
                             class="flex-1 py-1 px-2 text-sm font-bold rounded-lg bg-blue-500 text-white mr-1"
                             data-lang="tabLive">即時</button><button id="tab-history"
                             class="flex-1 py-1 px-2 text-sm font-bold rounded-lg bg-gray-200 text-gray-600 ml-1"
                             data-lang="tabHistory">歷史</button></div>
-                    <ul id="leaderboard-list" class="p-2 overflow-y-auto flex-grow space-y-1 text-sm max-h-60"></ul>
+                    <ul id="leaderboard-list" class="p-2 overflow-y-auto flex-grow space-y-1 text-sm"></ul>
                 </div>
             </div>
             <div id="player-info-bar"
@@ -495,7 +493,7 @@
         let CURRENT_THEME_ID = null, CURRENT_THEME_CONFIG = null;
         let db, auth, userId, playerRef, playersRef;
         let gameData = { map: [], questions: {} }, allPlayersData = {};
-        let gameState = { nickname: null, avatar: null, currentSquare: 0, score: 0, squareStates: {}, gameCompleted: false, isAnswering: false, audio: { bgm: 0.5, sfx: 0.8 } };
+        let gameState = { nickname: null, avatar: null, currentSquare: 0, score: 0, squareStates: {}, gameCompleted: false, isAnswering: false, isMoving: false, audio: { bgm: 0.5, sfx: 0.8 } };
         let audioCtx, bgmNode, sfxNode, audioBuffers = {}, bgmSource = null;
         let mapScale = 1, mapX = 0, mapY = 0, stageW = 0, stageH = 0;
 
@@ -509,9 +507,11 @@
             startModal: $('start-modal'), nickInput: $('nickname-input'), rerollBtn: $('reroll-btn'), avatarGrid: $('avatar-grid'), startConfirm: $('start-confirm-btn'), cancelEditBtn: $('cancel-edit-btn'),
             qaModal: $('qa-modal'), qaCity: $('qa-city'), qaText: $('qa-text'), qaOpts: $('qa-options'), qaFeedback: $('qa-feedback'), qaCloseBtn: $('qa-close-btn'),
             endModal: $('end-modal'), endMsg: $('end-msg'), endTotal: $('end-total'), endCorrect: $('end-correct'), endReviewBtn: $('end-review-btn'),
-            setModal: $('settings-modal'), setBtn: $('settings-btn'), setCloseBtn: $('settings-close-btn'), volBgm: $('vol-bgm'), volSfx: $('vol-sfx'), softReset: $('soft-reset-btn'), hardReset: $('hard-reset-btn'), backMenuBtn: $('back-menu-btn'),
+            setModal: $('settings-modal'), setBtn: $('settings-btn'), setCloseBtn: $('settings-close-btn'),
+            volBgm: $('vol-bgm'), volSfx: $('vol-sfx'), volBgmVal: $('vol-bgm-val'), volSfxVal: $('vol-sfx-val'),
+            softReset: $('soft-reset-btn'), hardReset: $('hard-reset-btn'), backMenuBtn: $('back-menu-btn'),
             zoomIn: $('zoom-in'), zoomOut: $('zoom-out'), zoomReset: $('zoom-reset'), tooltip: $('nickname-tooltip'),
-            startBackBtn: $('start-back-btn'), themeBackBtn: $('theme-back-btn')
+            startBackBtn: $('start-back-btn')
         };
 
         // 新增：套用翻譯
@@ -528,9 +528,11 @@
             applyTranslations(); // 遊戲啟動時套用翻譯
             const urlParams = new URLSearchParams(window.location.search);
             CURRENT_THEME_ID = urlParams.get('theme');
+            const isCloud = urlParams.get('cloud') === 'true';
+
             if (!CURRENT_THEME_ID) initThemeSelector();
             else {
-                try { await loadTheme(CURRENT_THEME_ID); startGameEngine(); }
+                try { await loadTheme(CURRENT_THEME_ID, isCloud); startGameEngine(); }
                 catch (e) {
                     // 使用 UI_TEXT
                     alert(`${UI_TEXT.errThemeLoad}${e.message}\n${UI_TEXT.errThemeFile.replace('{id}', CURRENT_THEME_ID)}`);
@@ -539,33 +541,106 @@
             }
         })();
 
-        function initThemeSelector() {
+        async function initThemeSelector() {
             dom.selector.classList.remove('hidden');
-            const script = document.createElement('script'); script.src = './modules/theme_list.js';
-            script.onload = () => {
-                const list = window.AVAILABLE_THEMES || [];
-                const container = $('theme-list'); container.innerHTML = '';
-                if (list.length === 0) { container.innerHTML = `<div class="col-span-full text-center text-gray-500 font-bold">${UI_TEXT.themeNoData}</div>`; return; }
-                list.forEach(t => {
-                    const card = document.createElement('div');
-                    card.className = "bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all cursor-pointer transform hover:-translate-y-2 flex flex-col overflow-hidden border border-gray-100 w-full sm:w-80 lg:w-96 group";
-                    card.innerHTML = `
-                        <div class="relative h-56 overflow-hidden bg-gray-200">
-                            <img src="modules/${t.id}/${t.cover}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><rect width=%22100%25%22 height=%22100%25%22 fill=%22%23eee%22/><text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%23aaa%22>No Image</text></svg>'">
-                        </div>
-                        <div class="p-6">
-                            <h3 class="text-2xl font-bold text-gray-800 mb-2 group-hover:text-blue-600 transition-colors">${t.name}</h3>
-                            <p class="text-gray-600 text-base leading-relaxed whitespace-pre-line">${t.description}</p>
-                        </div>
-                    `;
-                    card.onclick = () => window.location.search = `?theme=${t.id}`; container.appendChild(card);
-                });
-            };
-            script.onerror = () => $('theme-list').innerHTML = `<div class="col-span-full text-center text-red-500 font-bold">${UI_TEXT.themeReadError}</div>`;
-            document.body.appendChild(script);
+
+            // 讀取本地主題
+            let localList = [];
+            try {
+                const script = document.createElement('script');
+                script.src = './modules/theme_list.js';
+                script.onload = () => {
+                    localList = window.AVAILABLE_THEMES || [];
+                    renderCombinedThemes(localList);
+                };
+                document.body.appendChild(script);
+            } catch (e) { console.error("Local theme list load failed", e); }
+
+            // 讀取雲端主題 (Firebase)
+            try {
+                const app = initializeApp(FIREBASE_CONFIG);
+                const db = getDatabase(app);
+                const themesRef = ref(db, 'available_themes');
+                const snapshot = await get(themesRef);
+                if (snapshot.exists()) {
+                    const cloudThemes = Object.values(snapshot.val());
+                    renderCombinedThemes(localList, cloudThemes);
+                }
+            } catch (e) { console.error("Cloud theme list load failed", e); }
         }
 
-        function loadTheme(id) {
+        function renderCombinedThemes(local = [], cloud = []) {
+            const container = $('theme-list'); container.innerHTML = '';
+            const allThemes = [...local, ...cloud];
+
+            if (allThemes.length === 0) {
+                container.innerHTML = `<div class="col-span-full text-center text-gray-500 font-bold">${UI_TEXT.themeNoData}</div>`;
+                return;
+            }
+
+            allThemes.forEach(t => {
+                const card = document.createElement('div');
+                card.className = "bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all cursor-pointer transform hover:-translate-y-2 flex flex-col overflow-hidden border border-gray-100 w-full sm:w-80 lg:w-96 group relative";
+
+                const cloudTag = t.isCloud ? `<div class="absolute top-4 right-4 bg-blue-500 text-white text-[10px] font-bold px-2 py-1 rounded-full z-10 shadow-sm">☁️ 雲端</div>` : '';
+                const coverUrl = t.isCloud ? t.cover : `modules/${t.id}/${t.cover}`;
+
+                card.innerHTML = `
+                    ${cloudTag}
+                    <div class="relative h-56 overflow-hidden bg-gray-200">
+                        <img src="${coverUrl}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><rect width=%22100%25%22 height=%22100%25%22 fill=%22%23eee%22/><text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%23aaa%22>No Image</text></svg>'">
+                    </div>
+                    <div class="p-6">
+                        <h3 class="text-2xl font-bold text-gray-800 mb-2 group-hover:text-blue-600 transition-colors">${t.name}</h3>
+                        <p class="text-gray-600 text-base leading-relaxed whitespace-pre-line">${t.description}</p>
+                    </div>
+                `;
+                card.onclick = () => window.location.search = `?theme=${t.id}${t.isCloud ? '&cloud=true' : ''}`;
+                container.appendChild(card);
+            });
+        }
+
+        async function loadTheme(id, isCloud = false) {
+            if (isCloud) {
+                const app = initializeApp(FIREBASE_CONFIG);
+                const db = getDatabase(app);
+                const themeRef = ref(db, `themes/${id}`);
+                const snapshot = await get(themeRef);
+                if (snapshot.exists()) {
+                    const config = snapshot.val();
+                    // 雲端主題轉換為全域格式
+                    const rawSFX = config.assets.SFX || config.assets.sfx || {};
+                    const normalizedSFX = {};
+                    // 將 sfx-click 等舊 Key 轉為 click 等新 Key
+                    for (let k in rawSFX) {
+                        const newK = k.replace(/^sfx-/, '');
+                        normalizedSFX[newK] = rawSFX[k];
+                    }
+
+                    window.CURRENT_THEME_CONFIG = {
+                        GAS_URL: config.gasUrl,
+                        BOARD_COORDINATES: config.coordinates.map(c => ({ top: c.top || c.t, left: c.left || c.l })),
+                        ASSETS: {
+                            AVATARS: config.assets.avatars || {},
+                            IMAGES: config.assets.images,
+                            SFX: normalizedSFX,
+                            TEXT: {
+                                NPC_WELCOME: config.assets.text.welcome,
+                                NPC_IDLE_CHATS: config.assets.text.idleChats,
+                                MII_ADJECTIVES: config.assets.text.adj,
+                                MII_NOUNS: config.assets.text.noun
+                            }
+                        },
+                        isCloud: true
+                    };
+                    CURRENT_THEME_CONFIG = window.CURRENT_THEME_CONFIG;
+                    if (typeof DEFAULT_SFX !== 'undefined') {
+                        CURRENT_THEME_CONFIG.ASSETS.SFX = { ...DEFAULT_SFX, ...CURRENT_THEME_CONFIG.ASSETS.SFX };
+                    }
+                    return;
+                } else throw new Error("找不到雲端主題設定");
+            }
+
             return new Promise((resolve, reject) => {
                 const script = document.createElement('script'); script.src = `./modules/${id}/theme.js`;
                 script.onload = () => {
@@ -583,11 +658,17 @@
                 document.head.appendChild(script);
             });
         }
+
         function fixPaths(assets, id) {
             const prefix = `modules/${id}/`;
             for (let k in assets.AVATARS) assets.AVATARS[k] = prefix + assets.AVATARS[k];
-            for (let k in assets.IMAGES) assets.IMAGES[k] = prefix + assets.IMAGES[k];
-            for (let k in assets.SFX) { if (Array.isArray(assets.SFX[k])) assets.SFX[k] = assets.SFX[k].map(p => prefix + p); else assets.SFX[k] = prefix + assets.SFX[k]; }
+            for (let k in assets.IMAGES) {
+                if (!assets.IMAGES[k].startsWith('http')) assets.IMAGES[k] = prefix + assets.IMAGES[k];
+            }
+            for (let k in assets.SFX) {
+                if (Array.isArray(assets.SFX[k])) assets.SFX[k] = assets.SFX[k].map(p => p.startsWith('http') ? p : prefix + p);
+                else if (!assets.SFX[k].startsWith('http')) assets.SFX[k] = prefix + assets.SFX[k];
+            }
         }
 
         async function startGameEngine() {
@@ -633,8 +714,18 @@
         async function fetchGameData() {
             try {
                 let data;
+                // 若為雲端主題，優先從 Firebase Database 抓取題目
+                if (CURRENT_THEME_CONFIG.isCloud) {
+                    const app = initializeApp(FIREBASE_CONFIG);
+                    const db = getDatabase(app);
+                    const qRef = ref(db, `questions/${CURRENT_THEME_ID}`);
+                    const snapshot = await get(qRef);
+                    if (snapshot.exists()) {
+                        data = snapshot.val();
+                    } else throw new Error("找不到雲端題目資料庫");
+                }
                 // 若有 GAS_URL 且是完整的 HTTP 連結，則從遠端抓取
-                if (CURRENT_THEME_CONFIG.GAS_URL && CURRENT_THEME_CONFIG.GAS_URL.startsWith('http')) {
+                else if (CURRENT_THEME_CONFIG.GAS_URL && CURRENT_THEME_CONFIG.GAS_URL.startsWith('http')) {
                     const res = await fetch(CURRENT_THEME_CONFIG.GAS_URL);
                     data = await res.json();
                 } else {
@@ -659,34 +750,86 @@
         }
         async function loadAudio(key, url) {
             try {
-                const res = await fetch(url); const buf = await res.arrayBuffer(); const decoded = await audioCtx.decodeAudioData(buf);
-                if (!audioBuffers[key]) audioBuffers[key] = []; audioBuffers[key].push(decoded);
-            } catch (e) { console.warn("音效載入失敗", url); }
+                if (!url) return;
+                const urlStr = String(url).trim();
+                // 如果是遠端網址，為了繞過嚴格的 fetch CORS 限制，改用 Audio 物件載入
+                if (urlStr.startsWith('http')) {
+                    const audio = new Audio();
+                    audio.crossOrigin = "anonymous";
+                    audio.src = urlStr;
+                    audio.preload = 'auto';
+                    if (!audioBuffers[key]) audioBuffers[key] = [];
+                    audioBuffers[key].push({ type: 'element', data: audio, src: urlStr });
+                    return;
+                }
+                const res = await fetch(urlStr);
+                const buf = await res.arrayBuffer();
+                const decoded = await audioCtx.decodeAudioData(buf);
+                if (!audioBuffers[key]) audioBuffers[key] = [];
+                audioBuffers[key].push({ type: 'buffer', data: decoded });
+            } catch (e) {
+                console.warn("音效載入失敗", url, e);
+            }
         }
         function playSfx(key) {
             if (!audioCtx || !audioBuffers[key] || audioBuffers[key].length === 0) return;
             if (audioCtx.state === 'suspended') audioCtx.resume();
-            const src = audioCtx.createBufferSource(); src.buffer = audioBuffers[key][Math.floor(Math.random() * audioBuffers[key].length)];
-            src.connect(sfxNode); src.start(0);
+
+            const item = audioBuffers[key][Math.floor(Math.random() * audioBuffers[key].length)];
+            if (item.type === 'buffer') {
+                const src = audioCtx.createBufferSource();
+                src.buffer = item.data;
+                src.connect(sfxNode);
+                src.start(0);
+            } else if (item.type === 'element') {
+                const audio = new Audio(item.src);
+                audio.volume = gameState.audio.sfx;
+                audio.play().catch(e => console.warn("Audio element play failed", e));
+            }
         }
         function playBgm() {
             if (!audioCtx || !audioBuffers['bgm'] || bgmSource) return;
-            bgmSource = audioCtx.createBufferSource(); bgmSource.buffer = audioBuffers['bgm'][0];
-            bgmSource.loop = true; bgmSource.connect(bgmNode); bgmSource.start(0);
+            const item = audioBuffers['bgm'][0];
+
+            if (item.type === 'buffer') {
+                bgmSource = audioCtx.createBufferSource();
+                bgmSource.buffer = item.data;
+                bgmSource.loop = true;
+                bgmSource.connect(bgmNode);
+                bgmSource.start(0);
+            } else if (item.type === 'element') {
+                bgmSource = item.data; // 直接使用 element
+                bgmSource.loop = true;
+                bgmSource.volume = gameState.audio.bgm;
+                bgmSource.play().catch(e => console.warn("BGM element play failed", e));
+            }
         }
         function updateVolumes() {
-            if (bgmNode) bgmNode.gain.value = gameState.audio.bgm; if (sfxNode) sfxNode.gain.value = gameState.audio.sfx;
-            dom.volBgm.style.backgroundSize = `${gameState.audio.bgm * 100}% 100%`; dom.volSfx.style.backgroundSize = `${gameState.audio.sfx * 100}% 100%`;
+            if (bgmNode) bgmNode.gain.value = gameState.audio.bgm;
+            if (sfxNode) sfxNode.gain.value = gameState.audio.sfx;
+            // 同步更新 Element 類型的 BGM 音量
+            if (bgmSource && bgmSource.tagName === 'AUDIO') {
+                bgmSource.volume = gameState.audio.bgm;
+            }
+            if (dom.volBgmVal) dom.volBgmVal.textContent = Math.round(gameState.audio.bgm * 100) + '%';
+            if (dom.volSfxVal) dom.volSfxVal.textContent = Math.round(gameState.audio.sfx * 100) + '%';
+            dom.volBgm.style.backgroundSize = `${gameState.audio.bgm * 100}% 100%`;
+            dom.volSfx.style.backgroundSize = `${gameState.audio.sfx * 100}% 100%`;
+            // 同步更新滑桿數值
+            dom.volBgm.value = gameState.audio.bgm;
+            dom.volSfx.value = gameState.audio.sfx;
         }
 
         function enterGame() {
             dom.loading.classList.add('hidden'); playBgm(); syncFirebase();
             drawBoard(); updatePlayerInfo(); drawPlayer();
+            dom.diceBtn.disabled = (gameState.gameCompleted || gameState.isAnswering || gameState.isMoving);
             if (gameState.isAnswering) triggerQuestion(gameState.currentSquare);
             else showGuide(CURRENT_THEME_CONFIG.ASSETS.TEXT.NPC_WELCOME);
         }
         async function rollDice() {
-            if (gameState.gameCompleted || gameState.isAnswering) return;
+            if (gameState.gameCompleted || gameState.isAnswering || gameState.isMoving) return;
+            gameState.isMoving = true;
             dom.diceBtn.disabled = true; playSfx('dice');
             const diceAnim = document.createElement('div'); diceAnim.className = 'dice-anim'; dom.root.appendChild(diceAnim);
             let steps = 1;
@@ -695,6 +838,8 @@
             movePlayer(steps);
         }
         async function movePlayer(steps) {
+            gameState.isMoving = true;
+            dom.diceBtn.disabled = true;
             let curr = gameState.currentSquare, total = CURRENT_THEME_CONFIG.BOARD_COORDINATES.length;
             let target = (curr + steps) % total;
             for (let i = 1; i <= steps; i++) {
@@ -707,15 +852,20 @@
                 gameState.currentSquare = curr; drawPlayer(); playSfx('move'); await new Promise(r => setTimeout(r, 300));
             }
             dom.playersLayer.querySelector('.player-piece')?.classList.remove('moving');
-            saveState(); syncFirebase(); dom.diceBtn.disabled = false;
+            saveState(); syncFirebase();
             checkSquare(target);
         }
         function checkSquare(idx) {
             const status = gameState.squareStates[idx]?.status;
-            if (status === 'success' || status === 'failed' || gameData.map[idx]?.isVisible === false) setTimeout(() => movePlayer(1), 500);
-            else triggerQuestion(idx);
+            if (status === 'success' || status === 'failed' || gameData.map[idx]?.isVisible === false) {
+                setTimeout(() => movePlayer(1), 500);
+            } else {
+                gameState.isMoving = false;
+                triggerQuestion(idx);
+            }
         }
         function triggerQuestion(idx) {
+            dom.diceBtn.disabled = true;
             const mapItem = gameData.map[idx]; if (!mapItem) return movePlayer(1);
             const q = gameData.questions[mapItem.questionId]; if (!q) return movePlayer(1);
             gameState.isAnswering = true; saveState();
@@ -752,7 +902,10 @@
             }
             saveState(); updatePlayerInfo();
         }
-        function closeQA() { dom.qaModal.classList.add('hidden'); drawBoard(); syncFirebase(); checkForEnd(); }
+        function closeQA() {
+            dom.qaModal.classList.add('hidden'); drawBoard(); syncFirebase(); checkForEnd();
+            if (!gameState.gameCompleted) dom.diceBtn.disabled = false;
+        }
         function checkForEnd() {
             if (gameState.gameCompleted) return;
             const total = CURRENT_THEME_CONFIG.BOARD_COORDINATES.length; let answered = 0, visible = 0;
@@ -850,7 +1003,7 @@
         function updateLeaderboard() {
             dom.lbList.innerHTML = '';
             const list = Object.values(allPlayersData).filter(p => currentLbTab === 'live' ? p.isOnline : (p.highScore != null))
-                .sort((a, b) => currentLbTab === 'live' ? (b.currentScore || 0) - (a.currentScore || 0) : (b.highScore || 0) - (a.highScore || 0)).slice(0, 10);
+                .sort((a, b) => currentLbTab === 'live' ? (b.currentScore || 0) - (a.currentScore || 0) : (b.highScore || 0) - (a.highScore || 0));
             list.forEach(p => {
                 const li = document.createElement('li'); li.className = `flex items-center p-1.5 rounded-lg ${p.nickname === gameState.nickname ? 'bg-blue-100' : ''}`;
                 li.innerHTML = `<img src="${CURRENT_THEME_CONFIG.ASSETS.AVATARS[p.avatar]}" class="w-6 h-6 rounded-full mr-2 border bg-gray-200"><span class="truncate flex-1 font-bold text-gray-700 cursor-pointer" title="${p.nickname}">${p.nickname}</span><span class="font-extrabold ${currentLbTab === 'live' ? 'text-blue-600' : 'text-yellow-600'}">${currentLbTab === 'live' ? (p.currentScore || 0) : (p.highScore || 0)}</span>`;
@@ -910,10 +1063,6 @@
             dom.volBgm.oninput = e => { gameState.audio.bgm = e.target.value; updateVolumes(); };
             dom.volSfx.oninput = e => { gameState.audio.sfx = e.target.value; updateVolumes(); };
             dom.startBackBtn.onclick = () => window.location.search = '';
-            dom.themeBackBtn.onclick = () => {
-                if (window.history.length > 1) window.history.back();
-                else window.location.href = '/'; // 預設回到根目錄
-            };
             dom.softReset.onclick = () => showAlert(UI_TEXT.alertSoftResetTitle, UI_TEXT.alertSoftResetMsg, () => { gameState.currentSquare = 0; gameState.score = 0; gameState.squareStates = {}; gameState.gameCompleted = false; gameState.isAnswering = false; saveState(); window.location.reload(); }, () => { });
             dom.hardReset.onclick = () => showAlert(UI_TEXT.alertHardResetTitle, UI_TEXT.alertHardResetMsg, () => { if (playerRef) remove(playerRef); localStorage.removeItem('TM_' + CURRENT_THEME_ID); window.location.reload(); }, () => { });
             dom.backMenuBtn.onclick = () => window.location.search = '';
