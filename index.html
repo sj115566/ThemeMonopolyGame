@@ -635,6 +635,10 @@
                     };
                     CURRENT_THEME_CONFIG = window.CURRENT_THEME_CONFIG;
                     if (typeof DEFAULT_SFX !== 'undefined') {
+                        // 清理空值，以便套用預設音效
+                        for (let k in CURRENT_THEME_CONFIG.ASSETS.SFX) {
+                            if (!CURRENT_THEME_CONFIG.ASSETS.SFX[k]) delete CURRENT_THEME_CONFIG.ASSETS.SFX[k];
+                        }
                         CURRENT_THEME_CONFIG.ASSETS.SFX = { ...DEFAULT_SFX, ...CURRENT_THEME_CONFIG.ASSETS.SFX };
                     }
                     return;
@@ -648,6 +652,9 @@
                         CURRENT_THEME_CONFIG = window.CURRENT_THEME_CONFIG;
                         fixPaths(CURRENT_THEME_CONFIG.ASSETS, id);
                         if (typeof DEFAULT_SFX !== 'undefined') {
+                            for (let k in CURRENT_THEME_CONFIG.ASSETS.SFX) {
+                                if (!CURRENT_THEME_CONFIG.ASSETS.SFX[k]) delete CURRENT_THEME_CONFIG.ASSETS.SFX[k];
+                            }
                             CURRENT_THEME_CONFIG.ASSETS.SFX = { ...DEFAULT_SFX, ...CURRENT_THEME_CONFIG.ASSETS.SFX };
                         }
                         resolve();

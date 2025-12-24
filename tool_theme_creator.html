@@ -646,14 +646,36 @@
         window.saveAISettings = saveAISettings; // 確保可在 HTML onclick 中呼叫
 
         // --- 核心 logic ---
-        function getVal(id) { return (document.getElementById(id)?.value || '').trim(); }
+        const DEFAULT_RESOURCES = {
+            'sfx-bgm': 'backgroundMusic.mp3',
+            'sfx-click': 'click1.mp3',
+            'sfx-dice': 'dice1.mp3',
+            'sfx-move': 'move1.mp3',
+            'sfx-success': 'success.mp3',
+            'sfx-fail': 'fail.mp3',
+            'sfx-complete': 'complete.mp3',
+            'img-mapBg': 'map_background.png',
+            'img-guideNPC': 'guide_bear.png',
+            'img-loadingGif': 'loading_bear.gif'
+        };
+
+        function getVal(id) {
+            const v = (document.getElementById(id)?.value || '').trim();
+            return v;
+        }
+        function getValWithDefault(id) {
+            const v = getVal(id);
+            return v || DEFAULT_RESOURCES[id] || '';
+        }
         function setVal(id, val) {
             const el = document.getElementById(id);
             if (el) { el.value = val; generateAll(); }
         }
         function getList(id) { return getVal(id).split('\n').filter(x => x.trim()).map(x => `"${x.trim().replace(/"/g, '\\"')}"`).join(',\n            '); }
         function getSFX(id) {
-            const v = getVal(id); if (!v) return null;
+            let v = getVal(id);
+            if (!v && DEFAULT_RESOURCES[id]) v = DEFAULT_RESOURCES[id];
+            if (!v) return null;
             const fix = (s) => (s.startsWith('http') || s.startsWith('data:')) ? s : "sound/" + s;
             return v.includes(',') ? `[${v.split(',').map(s => `"${fix(s.trim())}"`).join(', ')}]` : `["${fix(v)}"]`;
         }
@@ -663,7 +685,7 @@
 
             // 更新非頭像資源預覽
             const updatePrev = (id, prevId) => {
-                const val = getVal(id);
+                const val = getValWithDefault(id);
                 const el = document.getElementById(prevId);
                 if (el) el.src = val.startsWith('http') ? val : (val ? 'img/' + val : '');
             };
@@ -706,9 +728,9 @@ ${coStr}
 ${avStr.join(',\n')}
         },
         IMAGES: {
-            "guideNPC": "img/${getVal('img-guideNPC')}",
-            "loadingGif": "img/${getVal('img-loadingGif')}",
-            "mapBg": "img/${getVal('img-mapBg')}"
+            "guideNPC": "img/${getValWithDefault('img-guideNPC')}",
+            "loadingGif": "img/${getValWithDefault('img-loadingGif')}",
+            "mapBg": "img/${getValWithDefault('img-mapBg')}"
         },
         SFX: {
 ${sfxArr.join(',\n')}
@@ -1147,7 +1169,7 @@ ${sfxArr.join(',\n')}
                 const themeName = getVal('theme-name');
 
                 // 1. 處理檔案上傳 (包含 Pollinations URL 轉存)
-                let mapBgUrl = getVal('img-mapBg');
+                let mapBgUrl = getValWithDefault('img-mapBg');
                 const mapFile = document.getElementById('map-upload').files[0];
                 if (mapFile) {
                     mapBgUrl = await uploadFile(mapFile, `themes/${tid}/images`, 'map_bg.png');
@@ -1155,12 +1177,12 @@ ${sfxArr.join(',\n')}
                     mapBgUrl = await uploadFile(mapBgUrl, `themes/${tid}/images`, 'map_bg.png');
                 }
 
-                let npcUrl = getVal('img-guideNPC');
+                let npcUrl = getValWithDefault('img-guideNPC');
                 if (npcUrl.startsWith('http')) {
                     npcUrl = await uploadFile(npcUrl, `themes/${tid}/images`, 'npc.png');
                 }
 
-                let loadingUrl = getVal('img-loadingGif');
+                let loadingUrl = getValWithDefault('img-loadingGif');
                 if (loadingUrl.startsWith('http')) {
                     loadingUrl = await uploadFile(loadingUrl, `themes/${tid}/images`, 'loading.gif');
                 }
@@ -1200,13 +1222,13 @@ ${sfxArr.join(',\n')}
                             noun: getVal('txt-noun').split('\n').filter(x => x.trim())
                         },
                         SFX: {
-                            bgm: getVal('sfx-bgm'),
-                            click: getVal('sfx-click'),
-                            dice: getVal('sfx-dice'),
-                            move: getVal('sfx-move'),
-                            success: getVal('sfx-success'),
-                            fail: getVal('sfx-fail'),
-                            complete: getVal('sfx-complete')
+                            bgm: getVal('sfx-bgm') || DEFAULT_RESOURCES['sfx-bgm'],
+                            click: getVal('sfx-click') || DEFAULT_RESOURCES['sfx-click'],
+                            dice: getVal('sfx-dice') || DEFAULT_RESOURCES['sfx-dice'],
+                            move: getVal('sfx-move') || DEFAULT_RESOURCES['sfx-move'],
+                            success: getVal('sfx-success') || DEFAULT_RESOURCES['sfx-success'],
+                            fail: getVal('sfx-fail') || DEFAULT_RESOURCES['sfx-fail'],
+                            complete: getVal('sfx-complete') || DEFAULT_RESOURCES['sfx-complete']
                         }
                     }
                 };
