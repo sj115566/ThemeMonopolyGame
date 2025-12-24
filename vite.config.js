@@ -9,6 +9,12 @@ export default defineConfig({
     base: './',
     build: {
         outDir: 'dist',
+        rollupOptions: {
+            input: {
+                main: path.resolve(__dirname, 'index.html'),
+                tool: path.resolve(__dirname, 'tool_theme_creator.html'),
+            },
+        },
     },
     plugins: [
         {
