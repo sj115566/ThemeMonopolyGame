@@ -611,7 +611,6 @@
                     // 雲端主題轉換為全域格式
                     const rawSFX = config.assets.SFX || config.assets.sfx || {};
                     const normalizedSFX = {};
-                    // 將 sfx-click 等舊 Key 轉為 click 等新 Key
                     for (let k in rawSFX) {
                         const newK = k.replace(/^sfx-/, '');
                         normalizedSFX[newK] = rawSFX[k];
@@ -635,16 +634,13 @@
                     };
                     CURRENT_THEME_CONFIG = window.CURRENT_THEME_CONFIG;
                     if (typeof DEFAULT_SFX !== 'undefined') {
-                        // 清理空值，以便套用預設音效
                         for (let k in CURRENT_THEME_CONFIG.ASSETS.SFX) {
-                            if (!CURRENT_THEME_CONFIG.ASSETS.SFX[k]) {
-                                delete CURRENT_THEME_CONFIG.ASSETS.SFX[k];
-                            }
+                            if (!CURRENT_THEME_CONFIG.ASSETS.SFX[k]) delete CURRENT_THEME_CONFIG.ASSETS.SFX[k];
                         }
                         CURRENT_THEME_CONFIG.ASSETS.SFX = { ...DEFAULT_SFX, ...CURRENT_THEME_CONFIG.ASSETS.SFX };
                     }
-                    // 全域路徑校正安全網 (針對雲端/本地合併後的最終結果)
-                    (function normalizeAllPaths() {
+                    // 雲端路徑補強 (排除 http/data/sound/img/)
+                    (function normalizeCloudPaths() {
                         const assets = CURRENT_THEME_CONFIG.ASSETS;
                         const fixS = (s) => (s && !s.startsWith('http') && !s.startsWith('data:') && !s.startsWith('sound/')) ? "sound/" + s : s;
                         const fixI = (s) => (s && !s.startsWith('http') && !s.startsWith('data:') && !s.startsWith('img/')) ? "img/" + s : s;
@@ -653,9 +649,10 @@
                             else assets.SFX[k] = fixS(assets.SFX[k]);
                         }
                         for (let k in assets.IMAGES) assets.IMAGES[k] = fixI(assets.IMAGES[k]);
+                        for (let k in assets.AVATARS) assets.AVATARS[k] = fixI(assets.AVATARS[k]);
                     })();
                     console.log("Theme Loaded (Cloud):", CURRENT_THEME_CONFIG);
-                    resolve();
+                    return; // Promise 結構下，async function return 等同於 resolve
                 } else throw new Error("找不到雲端主題設定");
             }
 
@@ -670,18 +667,15 @@
                                 if (!CURRENT_THEME_CONFIG.ASSETS.SFX[k]) delete CURRENT_THEME_CONFIG.ASSETS.SFX[k];
                             }
                             CURRENT_THEME_CONFIG.ASSETS.SFX = { ...DEFAULT_SFX, ...CURRENT_THEME_CONFIG.ASSETS.SFX };
-                        }
-                        // 全域路徑校正安全網
-                        (function normalizeAllPaths() {
+
+                            // 補強：僅針對 DEFAULT 溢入的音效做 sound/ 補強，不影響已由 fixPaths 處理過的 modules 路徑
                             const assets = CURRENT_THEME_CONFIG.ASSETS;
-                            const fixS = (s) => (s && !s.startsWith('http') && !s.startsWith('data:') && !s.startsWith('sound/')) ? "sound/" + s : s;
-                            const fixI = (s) => (s && !s.startsWith('http') && !s.startsWith('data:') && !s.startsWith('img/')) ? "img/" + s : s;
+                            const fixS = (s) => (s && !s.startsWith('http') && !s.startsWith('data:') && !s.startsWith('sound/') && !s.startsWith('modules/')) ? "sound/" + s : s;
                             for (let k in assets.SFX) {
                                 if (Array.isArray(assets.SFX[k])) assets.SFX[k] = assets.SFX[k].map(fixS);
                                 else assets.SFX[k] = fixS(assets.SFX[k]);
                             }
-                            for (let k in assets.IMAGES) assets.IMAGES[k] = fixI(assets.IMAGES[k]);
-                        })();
+                        }
                         console.log("Theme Loaded (Local):", CURRENT_THEME_CONFIG);
                         resolve();
                     }

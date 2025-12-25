@@ -172,9 +172,21 @@
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div class="space-y-2">
-                            <label class="text-sm font-bold text-gray-700">主題 ID (英文+下底線)</label>
-                            <input type="text" id="theme-id" placeholder="例如: mars_mission"
-                                class="w-full p-3 rounded-xl input-stylish" value="new_adventure">
+                            <label class="text-sm font-bold text-gray-700 flex justify-between">
+                                主題 ID (英文+下底線)
+                                <span id="cloud-edit-badge"
+                                    class="hidden text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full border border-amber-200 animate-pulse">☁️
+                                    雲端編輯模式</span>
+                            </label>
+                            <div class="relative group">
+                                <input type="text" id="theme-id" placeholder="例如: mars_mission"
+                                    class="w-full p-3 rounded-xl input-stylish disabled:bg-gray-50 disabled:text-gray-400"
+                                    value="new_adventure">
+                                <button id="btn-unlock-id" onclick="unlockThemeId()"
+                                    class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-indigo-500 bg-indigo-50 px-2 py-1 rounded-lg hover:bg-indigo-100 transition-colors">
+                                    🔓 解鎖另存新檔
+                                </button>
+                            </div>
                         </div>
                         <div class="space-y-2">
                             <label class="text-sm font-bold text-gray-700">主題名稱 (顯示文字)</label>
@@ -568,6 +580,7 @@
         });
 
         // --- 全域變數 ---
+        let currentEditingCloudId = null;
         let coordinates = [];
         const dom = {
             mapContainer: document.getElementById('map-preview-container'),
@@ -854,7 +867,9 @@ ${sfxArr.join(',\n')}
             if (result) {
                 setVal('theme-name', result.name);
                 setVal('theme-desc', result.description);
-                setVal('theme-id', result.id);
+                if (!currentEditingCloudId) {
+                    setVal('theme-id', result.id);
+                }
                 setVal('txt-welcome', result.welcome);
             }
         }
@@ -1362,7 +1377,16 @@ ${sfxArr.join(',\n')}
                 }
 
                 document.getElementById('cloud-themes-modal').classList.add('hidden');
-                alert(`✅ 主題 「${config.name}」 載入成功！`);
+
+                // 設定編輯模式
+                currentEditingCloudId = tid;
+                const idInput = document.getElementById('theme-id');
+                idInput.value = tid;
+                idInput.disabled = true;
+                document.getElementById('cloud-edit-badge').classList.remove('hidden');
+                document.getElementById('btn-unlock-id').classList.remove('hidden');
+
+                alert(`✅ 主題 「${config.name}」 載入成功！現在處於雲端更新模式。`);
                 generateAll();
             } catch (err) {
                 alert("❌ 載入失敗：" + err.message);
@@ -1392,6 +1416,18 @@ ${sfxArr.join(',\n')}
                 showLoading(false);
             }
         }
+
+        function unlockThemeId() {
+            if (confirm("解鎖 ID 後發佈將會建立一個「新的雲端主題」，而非更新現有主題。確定嗎？")) {
+                currentEditingCloudId = null;
+                const idInput = document.getElementById('theme-id');
+                idInput.disabled = false;
+                idInput.focus();
+                document.getElementById('cloud-edit-badge').classList.add('hidden');
+                document.getElementById('btn-unlock-id').classList.add('hidden');
+            }
+        }
+        window.unlockThemeId = unlockThemeId;
 
         window.openCloudThemesModal = openCloudThemesModal;
         window.loadThemeFromCloud = loadThemeFromCloud;
