@@ -125,7 +125,7 @@
             background: rgba(0, 0, 0, 0.3);
         }
     </style>
-  <script type="module" crossorigin src="./assets/tool-YGys9NEF.js"></script>
+  <script type="module" crossorigin src="./assets/tool-muZOuxyA.js"></script>
   <link rel="modulepreload" crossorigin href="./assets/global_config-vaLYm7Na.js">
 </head>
 
@@ -174,9 +174,21 @@
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div class="space-y-2">
-                            <label class="text-sm font-bold text-gray-700">主題 ID (英文+下底線)</label>
-                            <input type="text" id="theme-id" placeholder="例如: mars_mission"
-                                class="w-full p-3 rounded-xl input-stylish" value="new_adventure">
+                            <label class="text-sm font-bold text-gray-700 flex justify-between">
+                                主題 ID (英文+下底線)
+                                <span id="cloud-edit-badge"
+                                    class="hidden text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full border border-amber-200 animate-pulse">☁️
+                                    雲端編輯模式</span>
+                            </label>
+                            <div class="relative group">
+                                <input type="text" id="theme-id" placeholder="例如: mars_mission"
+                                    class="w-full p-3 rounded-xl input-stylish disabled:bg-gray-50 disabled:text-gray-400"
+                                    value="new_adventure">
+                                <button id="btn-unlock-id" onclick="unlockThemeId()"
+                                    class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-indigo-500 bg-indigo-50 px-2 py-1 rounded-lg hover:bg-indigo-100 transition-colors">
+                                    🔓 解鎖另存新檔
+                                </button>
+                            </div>
                         </div>
                         <div class="space-y-2">
                             <label class="text-sm font-bold text-gray-700">主題名稱 (顯示文字)</label>
