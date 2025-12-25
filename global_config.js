@@ -18,11 +18,11 @@ export const FIREBASE_CONFIG = {
  * 當個別主題模組沒有定義特定音效時，將使用這些預設值。
  */
 export const DEFAULT_SFX = {
-  "bgm": ["./sound/backgroundMusic.mp3"],
-  "click": ["./sound/click1.mp3", "./sound/click2.mp3", "./sound/click3.mp3"],
-  "dice": ["./sound/dice1.mp3", "./sound/dice2.mp3"],
-  "move": ["./sound/move1.mp3", "./sound/move2.mp3", "./sound/move3.mp3"],
-  "success": ["./sound/success.mp3"],
-  "fail": ["./sound/fail.mp3"],
-  "complete": ["./sound/complete.mp3"]
+  "bgm": ["sound/backgroundMusic.mp3"],
+  "click": ["sound/click1.mp3", "sound/click2.mp3", "sound/click3.mp3"],
+  "dice": ["sound/dice1.mp3", "sound/dice2.mp3"],
+  "move": ["sound/move1.mp3", "sound/move2.mp3", "sound/move3.mp3"],
+  "success": ["sound/success.mp3"],
+  "fail": ["sound/fail.mp3"],
+  "complete": ["sound/complete.mp3"]
 };

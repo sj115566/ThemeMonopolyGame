@@ -647,16 +647,28 @@
 
         // --- 核心 logic ---
         const DEFAULT_RESOURCES = {
-            'sfx-bgm': 'backgroundMusic.mp3',
-            'sfx-click': 'click1.mp3',
-            'sfx-dice': 'dice1.mp3',
-            'sfx-move': 'move1.mp3',
-            'sfx-success': 'success.mp3',
-            'sfx-fail': 'fail.mp3',
-            'sfx-complete': 'complete.mp3',
-            'img-mapBg': 'map_background.png',
-            'img-guideNPC': 'guide_bear.png',
-            'img-loadingGif': 'loading_bear.gif'
+            'sfx-bgm': 'sound/backgroundMusic.mp3',
+            'sfx-click': 'sound/click1.mp3',
+            'sfx-dice': 'sound/dice1.mp3',
+            'sfx-move': 'sound/move1.mp3',
+            'sfx-success': 'sound/success.mp3',
+            'sfx-fail': 'sound/fail.mp3',
+            'sfx-complete': 'sound/complete.mp3',
+            'img-mapBg': 'img/map_background.png',
+            'img-guideNPC': 'img/guide_bear.png',
+            'img-loadingGif': 'img/loading_bear.gif'
+        };
+
+        const normalizeImgPath = (s) => {
+            if (!s) return "";
+            if (s.startsWith('http') || s.startsWith('data:') || s.startsWith('img/')) return s;
+            return "img/" + s;
+        };
+
+        const normalizeSoundPath = (s) => {
+            if (!s) return "";
+            if (s.startsWith('http') || s.startsWith('data:') || s.startsWith('sound/')) return s;
+            return "sound/" + s;
         };
 
         function getVal(id) {
@@ -664,8 +676,9 @@
             return v;
         }
         function getValWithDefault(id) {
-            const v = getVal(id);
-            return v || DEFAULT_RESOURCES[id] || '';
+            let v = getVal(id);
+            if (!v && DEFAULT_RESOURCES[id]) v = DEFAULT_RESOURCES[id];
+            return v;
         }
         function setVal(id, val) {
             const el = document.getElementById(id);
@@ -673,10 +686,9 @@
         }
         function getList(id) { return getVal(id).split('\n').filter(x => x.trim()).map(x => `"${x.trim().replace(/"/g, '\\"')}"`).join(',\n            '); }
         function getSFX(id) {
-            let v = getVal(id);
-            if (!v && DEFAULT_RESOURCES[id]) v = DEFAULT_RESOURCES[id];
+            let v = getValWithDefault(id);
             if (!v) return null;
-            const fix = (s) => (s.startsWith('http') || s.startsWith('data:')) ? s : "sound/" + s;
+            const fix = (s) => normalizeSoundPath(s);
             return v.includes(',') ? `[${v.split(',').map(s => `"${fix(s.trim())}"`).join(', ')}]` : `["${fix(v)}"]`;
         }
 
@@ -687,7 +699,7 @@
             const updatePrev = (id, prevId) => {
                 const val = getValWithDefault(id);
                 const el = document.getElementById(prevId);
-                if (el) el.src = val.startsWith('http') ? val : (val ? 'img/' + val : '');
+                if (el) el.src = val.startsWith('http') || val.startsWith('data:') ? val : (val ? val : '');
             };
             updatePrev('img-mapBg', 'prev-mapBg');
             updatePrev('img-guideNPC', 'prev-guideNPC');
@@ -728,9 +740,9 @@ ${coStr}
 ${avStr.join(',\n')}
         },
         IMAGES: {
-            "guideNPC": "img/${getValWithDefault('img-guideNPC')}",
-            "loadingGif": "img/${getValWithDefault('img-loadingGif')}",
-            "mapBg": "img/${getValWithDefault('img-mapBg')}"
+            "guideNPC": "${normalizeImgPath(getValWithDefault('img-guideNPC'))}",
+            "loadingGif": "${normalizeImgPath(getValWithDefault('img-loadingGif'))}",
+            "mapBg": "${normalizeImgPath(getValWithDefault('img-mapBg'))}"
         },
         SFX: {
 ${sfxArr.join(',\n')}
@@ -1176,16 +1188,19 @@ ${sfxArr.join(',\n')}
                 } else if (mapBgUrl.startsWith('http')) {
                     mapBgUrl = await uploadFile(mapBgUrl, `themes/${tid}/images`, 'map_bg.png');
                 }
+                mapBgUrl = normalizeImgPath(mapBgUrl);
 
                 let npcUrl = getValWithDefault('img-guideNPC');
                 if (npcUrl.startsWith('http')) {
                     npcUrl = await uploadFile(npcUrl, `themes/${tid}/images`, 'npc.png');
                 }
+                npcUrl = normalizeImgPath(npcUrl);
 
                 let loadingUrl = getValWithDefault('img-loadingGif');
                 if (loadingUrl.startsWith('http')) {
                     loadingUrl = await uploadFile(loadingUrl, `themes/${tid}/images`, 'loading.gif');
                 }
+                loadingUrl = normalizeImgPath(loadingUrl);
 
                 // 2. 處理頭像上傳
                 const avatars = {};
@@ -1222,13 +1237,13 @@ ${sfxArr.join(',\n')}
                             noun: getVal('txt-noun').split('\n').filter(x => x.trim())
                         },
                         SFX: {
-                            bgm: getVal('sfx-bgm') || DEFAULT_RESOURCES['sfx-bgm'],
-                            click: getVal('sfx-click') || DEFAULT_RESOURCES['sfx-click'],
-                            dice: getVal('sfx-dice') || DEFAULT_RESOURCES['sfx-dice'],
-                            move: getVal('sfx-move') || DEFAULT_RESOURCES['sfx-move'],
-                            success: getVal('sfx-success') || DEFAULT_RESOURCES['sfx-success'],
-                            fail: getVal('sfx-fail') || DEFAULT_RESOURCES['sfx-fail'],
-                            complete: getVal('sfx-complete') || DEFAULT_RESOURCES['sfx-complete']
+                            bgm: normalizeSoundPath(getVal('sfx-bgm') || DEFAULT_RESOURCES['sfx-bgm']),
+                            click: normalizeSoundPath(getVal('sfx-click') || DEFAULT_RESOURCES['sfx-click']),
+                            dice: normalizeSoundPath(getVal('sfx-dice') || DEFAULT_RESOURCES['sfx-dice']),
+                            move: normalizeSoundPath(getVal('sfx-move') || DEFAULT_RESOURCES['sfx-move']),
+                            success: normalizeSoundPath(getVal('sfx-success') || DEFAULT_RESOURCES['sfx-success']),
+                            fail: normalizeSoundPath(getVal('sfx-fail') || DEFAULT_RESOURCES['sfx-fail']),
+                            complete: normalizeSoundPath(getVal('sfx-complete') || DEFAULT_RESOURCES['sfx-complete'])
                         }
                     }
                 };

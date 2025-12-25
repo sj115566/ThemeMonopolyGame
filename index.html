@@ -637,11 +637,25 @@
                     if (typeof DEFAULT_SFX !== 'undefined') {
                         // 清理空值，以便套用預設音效
                         for (let k in CURRENT_THEME_CONFIG.ASSETS.SFX) {
-                            if (!CURRENT_THEME_CONFIG.ASSETS.SFX[k]) delete CURRENT_THEME_CONFIG.ASSETS.SFX[k];
+                            if (!CURRENT_THEME_CONFIG.ASSETS.SFX[k]) {
+                                delete CURRENT_THEME_CONFIG.ASSETS.SFX[k];
+                            }
                         }
                         CURRENT_THEME_CONFIG.ASSETS.SFX = { ...DEFAULT_SFX, ...CURRENT_THEME_CONFIG.ASSETS.SFX };
                     }
-                    return;
+                    // 全域路徑校正安全網 (針對雲端/本地合併後的最終結果)
+                    (function normalizeAllPaths() {
+                        const assets = CURRENT_THEME_CONFIG.ASSETS;
+                        const fixS = (s) => (s && !s.startsWith('http') && !s.startsWith('data:') && !s.startsWith('sound/')) ? "sound/" + s : s;
+                        const fixI = (s) => (s && !s.startsWith('http') && !s.startsWith('data:') && !s.startsWith('img/')) ? "img/" + s : s;
+                        for (let k in assets.SFX) {
+                            if (Array.isArray(assets.SFX[k])) assets.SFX[k] = assets.SFX[k].map(fixS);
+                            else assets.SFX[k] = fixS(assets.SFX[k]);
+                        }
+                        for (let k in assets.IMAGES) assets.IMAGES[k] = fixI(assets.IMAGES[k]);
+                    })();
+                    console.log("Theme Loaded (Cloud):", CURRENT_THEME_CONFIG);
+                    resolve();
                 } else throw new Error("找不到雲端主題設定");
             }
 
@@ -657,6 +671,18 @@
                             }
                             CURRENT_THEME_CONFIG.ASSETS.SFX = { ...DEFAULT_SFX, ...CURRENT_THEME_CONFIG.ASSETS.SFX };
                         }
+                        // 全域路徑校正安全網
+                        (function normalizeAllPaths() {
+                            const assets = CURRENT_THEME_CONFIG.ASSETS;
+                            const fixS = (s) => (s && !s.startsWith('http') && !s.startsWith('data:') && !s.startsWith('sound/')) ? "sound/" + s : s;
+                            const fixI = (s) => (s && !s.startsWith('http') && !s.startsWith('data:') && !s.startsWith('img/')) ? "img/" + s : s;
+                            for (let k in assets.SFX) {
+                                if (Array.isArray(assets.SFX[k])) assets.SFX[k] = assets.SFX[k].map(fixS);
+                                else assets.SFX[k] = fixS(assets.SFX[k]);
+                            }
+                            for (let k in assets.IMAGES) assets.IMAGES[k] = fixI(assets.IMAGES[k]);
+                        })();
+                        console.log("Theme Loaded (Local):", CURRENT_THEME_CONFIG);
                         resolve();
                     }
                     else reject(new Error(UI_TEXT.errConfig));
@@ -670,11 +696,21 @@
             const prefix = `modules/${id}/`;
             for (let k in assets.AVATARS) assets.AVATARS[k] = prefix + assets.AVATARS[k];
             for (let k in assets.IMAGES) {
-                if (!assets.IMAGES[k].startsWith('http')) assets.IMAGES[k] = prefix + assets.IMAGES[k];
+                let v = assets.IMAGES[k];
+                if (!v.startsWith('http') && !v.startsWith('data:')) {
+                    // 若沒有 prefix 且沒有 img/ 則补上 prefix + 'img/'
+                    if (!v.startsWith('img/')) assets.IMAGES[k] = prefix + "img/" + v;
+                    else assets.IMAGES[k] = prefix + v;
+                }
             }
             for (let k in assets.SFX) {
-                if (Array.isArray(assets.SFX[k])) assets.SFX[k] = assets.SFX[k].map(p => p.startsWith('http') ? p : prefix + p);
-                else if (!assets.SFX[k].startsWith('http')) assets.SFX[k] = prefix + assets.SFX[k];
+                const fix = (s) => {
+                    if (s.startsWith('http') || s.startsWith('data:')) return s;
+                    if (!s.startsWith('sound/')) return prefix + "sound/" + s;
+                    return prefix + s;
+                };
+                if (Array.isArray(assets.SFX[k])) assets.SFX[k] = assets.SFX[k].map(fix);
+                else assets.SFX[k] = fix(assets.SFX[k]);
             }
         }
 
@@ -765,8 +801,14 @@
                     audio.crossOrigin = "anonymous";
                     audio.src = urlStr;
                     audio.preload = 'auto';
+
+                    // iOS 補強：將 Audio Element 轉為 Web Audio Source
+                    const source = audioCtx.createMediaElementSource(audio);
+                    const targetNode = (key === 'bgm') ? bgmNode : sfxNode;
+                    source.connect(targetNode);
+
                     if (!audioBuffers[key]) audioBuffers[key] = [];
-                    audioBuffers[key].push({ type: 'element', data: audio, src: urlStr });
+                    audioBuffers[key].push({ type: 'element', data: audio, src: urlStr, sourceNode: source });
                     return;
                 }
                 const res = await fetch(urlStr);
@@ -789,9 +831,9 @@
                 src.connect(sfxNode);
                 src.start(0);
             } else if (item.type === 'element') {
-                const audio = new Audio(item.src);
-                audio.volume = gameState.audio.sfx;
-                audio.play().catch(e => console.warn("Audio element play failed", e));
+                // 已在 loadAudio 中 connect 到 sfxNode，直接 play 即可受 sfxNode.gain 控制
+                item.data.currentTime = 0;
+                item.data.play().catch(e => console.warn("Audio element play failed", e));
             }
         }
         function playBgm() {
@@ -805,19 +847,15 @@
                 bgmSource.connect(bgmNode);
                 bgmSource.start(0);
             } else if (item.type === 'element') {
-                bgmSource = item.data; // 直接使用 element
+                bgmSource = item.data; // 直接使用 element (已在 loadAudio 中 connect 到 bgmNode)
                 bgmSource.loop = true;
-                bgmSource.volume = gameState.audio.bgm;
                 bgmSource.play().catch(e => console.warn("BGM element play failed", e));
             }
         }
         function updateVolumes() {
             if (bgmNode) bgmNode.gain.value = gameState.audio.bgm;
             if (sfxNode) sfxNode.gain.value = gameState.audio.sfx;
-            // 同步更新 Element 類型的 BGM 音量
-            if (bgmSource && bgmSource.tagName === 'AUDIO') {
-                bgmSource.volume = gameState.audio.bgm;
-            }
+
             if (dom.volBgmVal) dom.volBgmVal.textContent = Math.round(gameState.audio.bgm * 100) + '%';
             if (dom.volSfxVal) dom.volSfxVal.textContent = Math.round(gameState.audio.sfx * 100) + '%';
             dom.volBgm.style.backgroundSize = `${gameState.audio.bgm * 100}% 100%`;
