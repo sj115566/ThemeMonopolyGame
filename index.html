@@ -1103,7 +1103,7 @@
             dom.volSfx.oninput = e => { gameState.audio.sfx = e.target.value; updateVolumes(); };
             dom.startBackBtn.onclick = () => window.location.search = '';
             dom.softReset.onclick = () => showAlert(UI_TEXT.alertSoftResetTitle, UI_TEXT.alertSoftResetMsg, () => { gameState.currentSquare = 0; gameState.score = 0; gameState.squareStates = {}; gameState.gameCompleted = false; gameState.isAnswering = false; saveState(); window.location.reload(); }, () => { });
-            dom.hardReset.onclick = () => showAlert(UI_TEXT.alertHardResetTitle, UI_TEXT.alertHardResetMsg, () => { if (playerRef) remove(playerRef); localStorage.removeItem('TM_' + CURRENT_THEME_ID); window.location.reload(); }, () => { });
+            dom.hardReset.onclick = () => showAlert(UI_TEXT.alertHardResetTitle, UI_TEXT.alertHardResetMsg, async () => { if (playerRef) await update(playerRef, { isOnline: false }); localStorage.removeItem('TM_' + CURRENT_THEME_ID); window.location.reload(); }, () => { });
             dom.backMenuBtn.onclick = () => window.location.search = '';
             dom.qaCloseBtn.onclick = () => dom.qaModal.classList.add('hidden');
             dom.endReviewBtn.onclick = () => { dom.endModal.classList.add('hidden'); showGuide(UI_TEXT.guideReviewMode); };
