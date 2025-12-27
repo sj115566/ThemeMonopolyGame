@@ -20,6 +20,8 @@
   },
   "homepage": "https://github.com/sj115566/ThemeMonopolyGame#readme",
   "devDependencies": {
-    "vite": "^7.3.0"
+    "vite": "^7.3.0",
+    "vite-plugin-pwa": "^1.2.0",
+    "workbox-window": "^7.4.0"
   }
 }

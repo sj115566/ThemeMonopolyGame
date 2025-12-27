@@ -1,62 +1,220 @@
 # Thememonopoly (互動複習大富翁)
 
-這是一個基於 Firebase 的互動大富翁遊戲專案。
+![Project Banner](https://img.shields.io/badge/Status-Active-success)
+![Vite](https://img.shields.io/badge/Built%20With-Vite-646CFF)
+![Firebase](https://img.shields.io/badge/Database-Firebase-FFCA28)
+![AI Powered](https://img.shields.io/badge/AI-Gemini%20%7C%20ElevenLabs-blueviolet)
 
-## GitHub 託管與部署說明
+> **將枯燥的複習題目，變成一場刺激的互動大富翁冒險！**
+> Turn boring quizzes into an exciting interactive monopoly journey.
 
-本專案已設定好 GitHub Actions 自動部署至 GitHub Pages。
+這是一個結合 **生成式 AI** 與 **多人互動遊戲** 的教育專案。教師可以透過簡單的介面，利用 AI 快速生成適合課程的主題地圖、背景音樂與題目，讓學生在遊戲中快樂複習。
 
-### 1. 建立 GitHub 儲存庫
-請在 GitHub 上建立一個新的儲存庫 (Repository)，然後在本地執行以下指令（請將 `<YOUR_REPO_URL>` 替換為你的儲存庫網址）：
+---
 
+## 🎮 關於遊戲 (The Game)
+
+這是一個支援手機與電腦瀏覽器的網頁遊戲 (PWA)。
+*   **多人同樂**：支援本地多人輪流擲骰子，或透過即時資料庫進行異地連線（視部署設定而定）。
+*   **角色系統**：學生可選擇或隨機生成可愛的動物頭像。
+*   **PWA 支援**：支援離線安裝與快取 (Offline-ready)，可將網頁安裝到手機主畫面，體驗如原生 App 般流暢。
+
+### 📱 如何安裝 (How to Install)
+將網頁加入主畫面，獲得最佳全螢幕體驗：
+
+*   **iOS (iPhone/iPad)**:
+    1.  使用 **Safari** 開啟網頁。
+    2.  點擊下方的 **分享 (Share)** 按鈕 <img src="https://help.apple.com/assets/65E216738321584288029515/65E2167433B39655D30432CC/zh_TW/5728a50f3747b0e27163f572459fc546.png" height="16">。
+    3.  滑動選單找到並點擊 **「加入主畫面」(Add to Home Screen) ➕**。
+*   **Android (Chrome)**:
+    1.  點擊瀏覽器右上角的 **選單 (⋮)**。
+    2.  選擇 **「安裝應用程式」(Install App)** 或 **「加到主畫面」**。
+*   **電腦 (Chrome/Edge)**:
+    1.  點擊網址列右側的 **安裝圖示 ⬇️** (Install)。
+
+---
+
+## 👨‍🏫 致 教育工作者 (For Teachers)
+
+本專案旨在降低數位遊戲式學習 (Game-Based Learning) 的門檻。您不需要任何程式設計背景，即可透過我們內建的「主題編輯器」製作專屬教材。
+
+### 🌟 核心特色
+1.  **AI 輔助創作**：
+    *   **一鍵生成**：輸入主題名稱（如「火星探險」、「光合作用」），AI 直接幫您產生情境描述、風格提示詞。
+    *   **AI 繪圖與配樂**：串接 Gemini 與 ElevenLabs，自動生成遊戲地圖、NPC 角色、背景音樂 (BGM) 與音效 (SFX)。
+    *   **自動出題**：根據您的主題，AI 自動設計 20 題以上的單選題，並直接配置到地圖上。
+
+2.  **簡易的編輯體驗**：
+    *   **視覺化地圖標記**：上傳圖片或使用 AI 生成地圖後，滑鼠點擊即可設定玩家移動路徑。
+    *   **題目自訂**：除了 AI 出題，您也可以手動修改每一題的內容、選項與解答。
+
+3.  **雲端分享**：
+    *   製作完成的主題可直接點擊「雲端發佈」，產生一組代碼或連結，學生打開網頁即可遊玩，無需安裝 App。
+
+### 🚀 如何開始？
+1.  開啟本專案的 **[主題產生器 (Theme Creator)](./tool_theme_creator.html)** 網頁。
+2.  點擊右上角的 **⚙️ AI 設定**。
+3.  依照畫面上的步驟製作您的遊戲主題，完成後點擊 **☁️ 雲端發佈**。
+
+### 🛡️ 重要：AI 安全設定 (API Key Security)
+為了使用 AI 功能，您需要填入 Google Gemini 或 ElevenLabs 的 API Key。
+> [!WARNING]
+> **請勿在公用電腦或與學生共用的裝置上直接填入您的 API Key！**
+> 您的 Key 會被儲存在瀏覽器中，可能會被有心人士竊取。
+
+若您需要在公用環境使用，強烈建議架設一個 **Cloudflare Worker 代理 (Proxy)**。這是一個免費且安全的轉發服務，可以隱藏您的真實 Key。
+
+#### ☁️ 只要 5 分鐘！Cloudflare Proxy 架設教學 (免寫程式)
+
+請依照以下步驟，在網頁上點幾下即可完成：
+
+1.  **註冊帳號**：前往 [Cloudflare Dash](https://dash.cloudflare.com/) 註冊一個免費帳號。
+2.  **建立 Worker**：
+    *   在左側選單點擊 **Workers & Pages**。
+    *   點擊 **Create** (建立) -> **Create Worker** (建立 Worker)。
+    *   點擊 **Deploy** (部署) (名字可以隨意取，例如 `my-game-proxy`)。
+3.  **貼上程式碼**：
+    *   點擊 **Edit code** (編輯程式碼)。
+    *   **刪除** 左側編輯器中原本所有的程式碼。
+    *   **複製** 下方提供的程式碼，並 **貼上** 到編輯器中：
+
+    <details>
+    <summary>📄 點擊展開查看完整程式碼 (Copy this code)</summary>
+
+    ```javascript
+    export default {
+        async fetch(request, env, ctx) {
+            const corsHeaders = {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type, x-api-key',
+            };
+
+            // Handle CORS preflight
+            if (request.method === 'OPTIONS') {
+                return new Response(null, { headers: corsHeaders });
+            }
+
+            // Only allow POST requests for the actual proxy logic
+            if (request.method !== 'POST') {
+                return new Response('Method Not Allowed', { status: 405, headers: corsHeaders });
+            }
+
+            try {
+                const body = await request.json();
+                const { type, payload } = body;
+
+                if (type === 'gemini') {
+                    // 使用環境變數中的 GEMINI_API_KEY
+                    const geminiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${env.GEMINI_API_KEY}`;
+                    const response = await fetch(geminiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload),
+                    });
+                    const data = await response.json();
+                    return new Response(JSON.stringify(data), {
+                        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                        status: response.status
+                    });
+                }
+
+                if (type === 'elevenlabs-sfx' || type === 'elevenlabs-music') {
+                    const endpoint = type === 'elevenlabs-sfx' 
+                        ? 'https://api.elevenlabs.io/v1/sound-generation' 
+                        : 'https://api.elevenlabs.io/v1/music';
+                    
+                    const response = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: {
+                            'xi-api-key': env.ELEVENLABS_API_KEY, // 使用環境變數
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(payload),
+                    });
+
+                    if (!response.ok) {
+                        const errText = await response.text();
+                        return new Response(errText, { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+                    }
+
+                    const audioBuffer = await response.arrayBuffer();
+                    return new Response(audioBuffer, {
+                        headers: { ...corsHeaders, 'Content-Type': 'audio/mpeg' },
+                        status: response.status
+                    });
+                }
+
+                return new Response(JSON.stringify({ error: 'Invalid proxy type' }), {
+                    status: 400,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+
+            } catch (err) {
+                return new Response(JSON.stringify({ error: err.message }), {
+                    status: 500,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
+        },
+    };
+    ```
+    </details>
+
+4.  **部署**：點擊右上角的 **Deploy** 儲存。
+5.  **設定金鑰 (Secrets)**：
+    *   回到 Worker 的設定頁面 (Settings)。
+    *   點擊 **Variables and Secrets** (變數與機密)。
+    *   點擊 **Add**，加入以下變數 (值填入您真實的 API Key)：
+        *   變數名: `GEMINI_API_KEY` / 值: (您的 Google Gemini Key)
+        *   變數名: `ELEVENLABS_API_KEY` / 值: (您的 ElevenLabs Key，選填)
+    *   點擊 **Deploy** 再次部署以生效。
+6.  **完成**：
+    *   複製您的 Worker網址 (例如 `https://my-game-proxy.ooo.workers.dev`)。
+    *   回到本專案的「主題產生器」>「⚙️ AI 設定」。
+    *   將網址貼入 **Cloudflare Worker 代理網址** 欄位。
+    *   **現在您可以安心地使用 AI 功能了！**
+
+---
+
+## 💻 致 開發者 (For Developers)
+
+### 技術架構
+*   **前端核心**: Native JavaScript (ES Modules), HTML5, CSS3
+*   **建構工具**: [Vite](https://vitejs.dev/)
+*   **樣式框架**: [Tailwind CSS](https://tailwindcss.com/)
+*   **後端服務**: [Firebase](https://firebase.google.com/)
+*   **AI 整合**: Google Gemini API, ElevenLabs API, Cloudflare Workers
+
+### 本地開發 (Local Development)
+
+1.  **複製專案 & 安裝依賴**
+    ```bash
+    git clone https://github.com/<your-username>/Thememonopoly.git
+    cd Thememonopoly
+    npm install
+    ```
+
+2.  **設定環境變數** (`.env`)
+    ```env
+    VITE_FIREBASE_API_KEY=...
+    # 其他 Firebase 設定...
+    ```
+
+3.  **啟動伺服器**: `npm run dev`
+
+### 部署 (Deployment)
+專案內建 GitHub Actions (`.github/workflows/deploy.yml`)，Push 到 `main` 分支即自動部署至 **GitHub Pages**。請記得在 GitHub Repo Settings 設定對應的 Secrets。
+
+### Cloudflare Worker (CLI)
+如果您熟悉 `wrangler`，也可以直接使用 CLI 部署 `worker/` 目錄下的程式碼：
 ```bash
-git remote add origin <YOUR_REPO_URL>
-git push -u origin main
+cd worker
+npm install
+npx wrangler secret put GEMINI_API_KEY
+npx wrangler deploy
 ```
 
-### 2. 設定 GitHub Secrets (重要)
-為了保護 Firebase API Key 不被公開，專案使用了 GitHub Secrets。部署時 GitHub Actions 會在編譯過程中自動將這些金鑰注入。
+---
 
-請至你的 GitHub 儲存庫設定：
-**Settings > Secrets and variables > Actions > New repository secret**
-
-新增以下 Secret：
-- `FIREBASE_API_KEY`: 你的 Firebase API Key
-- `FIREBASE_AUTH_DOMAIN`: 你的 Firebase Auth Domain
-- `FIREBASE_DATABASE_URL`: 你的 Firebase Database URL
-- `FIREBASE_PROJECT_ID`: 你的 Firebase Project ID
-- `FIREBASE_STORAGE_BUCKET`: 你的 Firebase Storage Bucket
-- `FIREBASE_MESSAGING_SENDER_ID`: 你的 Firebase Messaging Sender ID
-- `FIREBASE_APP_ID`: 你的 Firebase App ID
-
-### 3. 開啟 GitHub Pages
-部署完成後（Action 執行成功後），請至：
-**Settings > Pages**
-將 **Build and deployment > Branch** 設定為 `gh-pages` (由 Action 自動產生)。
-
-## 本地開發
-本專案目前使用 **Vite** 進行開發。
-
-1. **安裝依賴**：
-   ```bash
-   npm install
-   ```
-
-2. **設定環境變數**：
-   在根目錄建立 `.env` 檔案，內容如下：
-   ```env
-   VITE_FIREBASE_API_KEY=你的_API_KEY
-   VITE_FIREBASE_AUTH_DOMAIN=你的_AUTH_DOMAIN
-   VITE_FIREBASE_DATABASE_URL=你的_DATABASE_URL
-   VITE_FIREBASE_PROJECT_ID=你的_PROJECT_ID
-   VITE_FIREBASE_STORAGE_BUCKET=你的_STORAGE_BUCKET
-   VITE_FIREBASE_MESSAGING_SENDER_ID=你的_SENDER_ID
-   VITE_FIREBASE_APP_ID=你的_APP_ID
-   ```
-
-3. **啟動開發伺服器**：
-   ```bash
-   npm run dev
-   ```
-
-**注意：`.env` 檔案已被列入 `.gitignore`，請勿推送到 GitHub。**
+*Made with ❤️ for Education.*

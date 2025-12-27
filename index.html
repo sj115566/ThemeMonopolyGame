@@ -483,6 +483,27 @@
         class="fixed bg-black/80 text-white text-sm px-3 py-1.5 rounded-lg pointer-events-none z-[110] hidden transition-opacity">
     </div>
 
+    <!-- PWA Install Prompt -->
+    <button id="pwa-install-btn"
+        class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] hidden bg-indigo-600 text-white px-6 py-3 rounded-full font-bold shadow-2xl flex items-center gap-2 animate-bounce hover:bg-indigo-700 transition-colors">
+        📲 安裝 App (Install)
+    </button>
+
+    <div id="ios-install-hint"
+        class="fixed bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md shadow-[0_-5px_20px_rgba(0,0,0,0.1)] z-[200] hidden flex-col items-center text-center pb-8 rounded-t-3xl border-t border-gray-200">
+        <button onclick="document.getElementById('ios-install-hint').classList.add('hidden')"
+            class="absolute top-2 right-4 text-gray-400 font-bold text-xl">×</button>
+        <p class="font-bold text-gray-800 mb-2 text-lg">安裝到主畫面</p>
+        <div class="flex items-center gap-2 text-gray-600 text-sm">
+            點擊瀏覽器下方的 <img
+                src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%233b82f6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8'/%3E%3Cpolyline points='16 6 12 2 8 6'/%3E%3Cline x1='12' y1='2' x2='12' y2='15'/%3E%3C/svg%3E"
+                class="w-6 h-6 inline"> 分享按鈕
+        </div>
+        <div class="flex items-center gap-2 text-gray-600 text-sm mt-1">
+            然後選擇 <span class="font-bold text-gray-800">加入主畫面 (Add to Home Screen)</span> ➕
+        </div>
+    </div>
+
     <!-- PART 4: 核心腳本 -->
     <script type="module">
         import { FIREBASE_CONFIG, DEFAULT_SFX } from "./global_config.js";
@@ -523,6 +544,40 @@
             });
             document.title = UI_TEXT.appTitle;
         }
+
+        // --- PWA Installation Logic ---
+        (function initPWA() {
+            let deferredPrompt;
+            const btn = $('pwa-install-btn');
+            const iosHint = $('ios-install-hint');
+
+            // 1. Android / Desktop (Chrome/Edge)
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                btn.classList.remove('hidden');
+            });
+
+            btn.addEventListener('click', async () => {
+                btn.classList.add('hidden');
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    console.log(`User response to the install prompt: ${outcome}`);
+                    deferredPrompt = null;
+                }
+            });
+
+            // 2. iOS Detection (Show hint if not standalone)
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+
+            if (isIOS && !isStandalone) {
+                // Delay showing hint to avoid being annoying immediately
+                setTimeout(() => iosHint.classList.remove('hidden'), 3000);
+            }
+        })();
+
 
         (async function initApp() {
             applyTranslations(); // 遊戲啟動時套用翻譯

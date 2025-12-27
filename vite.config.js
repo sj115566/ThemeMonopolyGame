@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite';
+import { VitePWA } from 'vite-plugin-pwa';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -17,6 +18,31 @@ export default defineConfig({
         },
     },
     plugins: [
+        VitePWA({
+            registerType: 'autoUpdate',
+            includeAssets: ['favicon.png', 'icon.png'],
+            manifest: {
+                name: "互動複習大富翁",
+                short_name: "互動複習大富翁",
+                start_url: "./",
+                scope: "./",
+                display: "standalone",
+                orientation: "landscape",
+                theme_color: "#ffffff",
+                background_color: "#ffffff",
+                icons: [
+                    {
+                        src: "./icon.png",
+                        sizes: "512x512",
+                        type: "image/png"
+                    }
+                ]
+            },
+            workbox: {
+                globPatterns: ['**/*.{js,css,html,ico,png,svg,mp3,json}'],
+                maximumFileSizeToCacheInBytes: 15 * 1024 * 1024
+            }
+        }),
         {
             name: 'save-theme-plugin',
             configureServer(server) {
