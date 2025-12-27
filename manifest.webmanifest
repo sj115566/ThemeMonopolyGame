@@ -1,0 +1,1 @@
+{"name":"互動複習大富翁","short_name":"互動複習大富翁","description":"這是一個基於 Firebase 的互動大富翁遊戲專案。","start_url":"./","display":"standalone","background_color":"#ffffff","theme_color":"#ffffff","lang":"en","scope":"./","orientation":"landscape","icons":[{"src":"./icon.png","sizes":"512x512","type":"image/png"}]}

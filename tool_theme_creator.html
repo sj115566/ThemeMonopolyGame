@@ -150,7 +150,7 @@
     </style>
   <script type="module" crossorigin src="./assets/tool-Dl_Fitbk.js"></script>
   <link rel="modulepreload" crossorigin href="./assets/global_config-vaLYm7Na.js">
-</head>
+<link rel="manifest" href="./manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="./registerSW.js"></script></head>
 
 <body class="p-4 md:p-8">
     <div class="max-w-6xl mx-auto">
@@ -164,6 +164,10 @@
                 </p>
             </div>
             <div class="flex gap-4">
+                <button onclick="document.getElementById('help-modal').classList.remove('hidden')"
+                    class="px-5 py-3 glass-card text-emerald-600 font-bold flex items-center gap-2 hover:bg-white transition-all border-emerald-100 hover:border-emerald-300">
+                    📖 使用教學
+                </button>
                 <button onclick="document.getElementById('ai-settings-modal').classList.remove('hidden')"
                     class="px-5 py-3 glass-card text-indigo-900 font-bold flex items-center gap-2 hover:bg-white transition-all">
                     ⚙️ AI 設定
@@ -590,6 +594,209 @@
         class="fixed inset-0 bg-white/50 backdrop-blur-md flex flex-col items-center justify-center z-[200] hidden">
         <div class="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4"></div>
         <div id="loading-text" class="text-indigo-900 font-bold animate-pulse text-lg">AI 正在思考中...</div>
+    </div>
+
+    <!-- 教學 Modal -->
+    <div id="help-modal"
+        class="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-[100] hidden backdrop-blur-sm">
+        <div class="glass-card bg-white p-8 w-full max-w-4xl shadow-2xl flex flex-col max-h-[85vh]">
+            <div class="flex justify-between items-center mb-6 border-b pb-4 border-emerald-100">
+                <h3 class="text-2xl font-bold text-emerald-900 flex items-center gap-2">📖 使用說明與教學</h3>
+                <button onclick="document.getElementById('help-modal').classList.add('hidden')"
+                    class="text-gray-400 hover:text-gray-600 text-2xl font-bold w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors">✕</button>
+            </div>
+
+            <div class="overflow-y-auto pr-4 space-y-8 custom-scrollbar">
+
+                <!-- 1. 快速上手 -->
+                <section>
+                    <h4 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <span
+                            class="bg-emerald-100 text-emerald-600 w-8 h-8 rounded-full flex items-center justify-center text-sm ring-4 ring-emerald-50">1</span>
+                        快速上手流程
+                    </h4>
+                    <div
+                        class="bg-emerald-50/50 p-6 rounded-2xl border border-emerald-100 space-y-4 text-sm text-gray-700 leading-relaxed">
+                        <p class="flex items-start gap-2">
+                            <span class="font-bold text-emerald-600 whitespace-nowrap">Step 1.</span>
+                            <span><strong>設計內容</strong>：依照畫面上的 <strong class="text-gray-900">步驟 1 ~
+                                    4</strong>，依序設定主題資訊、上傳或生成圖片、標記地圖路徑與建立題庫。</span>
+                        </p>
+                        <p class="flex items-start gap-2">
+                            <span class="font-bold text-emerald-600 whitespace-nowrap">Step 2.</span>
+                            <span><strong>雲端發佈</strong>：設計完成後，點擊頂部的 <button
+                                    class="bg-white border border-indigo-200 text-indigo-600 px-2 py-0.5 rounded text-xs font-bold shadow-sm mx-1">☁️
+                                    雲端發佈</button>，該主題即會出現在遊戲列表中，學生可直接選擇遊玩！</span>
+                        </p>
+                        <div class="flex items-start gap-2 pt-2 border-t border-emerald-200/50">
+                            <span class="text-base">💡</span>
+                            <span><strong>AI 智能輔助 (選用)</strong>：若您希望加速製作，可隨時點擊 <button
+                                    class="bg-white border border-indigo-200 text-indigo-900 px-2 py-0.5 rounded text-xs font-bold shadow-sm mx-1">⚙️
+                                    AI 設定</button> 填入 API Key。啟用後，AI 能協助您自動撰寫故事、繪圖與出題！</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 2. Cloudflare Worker 教學 -->
+                <section>
+                    <h4 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <span
+                            class="bg-purple-100 text-purple-600 w-8 h-8 rounded-full flex items-center justify-center text-sm ring-4 ring-purple-50">2</span>
+                        如何架設免費 AI 代理 (Proxy)
+                    </h4>
+                    <div class="prose prose-sm text-gray-600 max-w-none">
+                        <div class="bg-amber-50 border-l-4 border-amber-400 p-4 mb-6 rounded-r-xl">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-xl">⚠️</span>
+                                <p class="font-bold text-amber-800 text-base">安全警告</p>
+                            </div>
+                            <p class="text-amber-700 text-xs pl-7">請勿在公用電腦直接填入 API Key！建議花 5 分鐘架設 Cloudflare Worker
+                                代理，隱藏您的真實金鑰。</p>
+                        </div>
+
+                        <h5 class="font-bold text-gray-900 text-base mb-3">簡單 3 步驟教學：</h5>
+                        <ul class="space-y-4 pl-2">
+                            <li class="flex gap-3">
+                                <span
+                                    class="flex-shrink-0 w-6 h-6 bg-gray-100 text-gray-600 rounded-full flex items-center justify-center text-xs font-bold mt-0.5">1</span>
+                                <div>前往 <a href="https://dash.cloudflare.com/" target="_blank"
+                                        class="text-blue-600 hover:underline font-bold">Cloudflare Dash</a> 註冊/登入，點擊左側
+                                    <strong>Workers & Pages</strong> > <strong>Create Worker</strong> >
+                                    <strong>Deploy</strong>。
+                                </div>
+                            </li>
+                            <li class="flex gap-3">
+                                <span
+                                    class="flex-shrink-0 w-6 h-6 bg-gray-100 text-gray-600 rounded-full flex items-center justify-center text-xs font-bold mt-0.5">2</span>
+                                <div>點擊 <strong>Edit Code</strong>，刪除原有程式碼，貼上以下腳本：</div>
+                            </li>
+                        </ul>
+
+                        <div class="relative group mt-3 mb-4">
+                            <pre
+                                class="bg-gray-800 text-purple-200 p-4 rounded-xl text-[10px] overflow-x-auto font-mono custom-scrollbar shadow-inner border border-gray-700">export default {
+    async fetch(request, env, ctx) {
+        const corsHeaders = {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, x-api-key',
+        };
+
+        // Handle CORS preflight
+        if (request.method === 'OPTIONS') {
+            return new Response(null, { headers: corsHeaders });
+        }
+
+        // Only allow POST requests for the actual proxy logic
+        if (request.method !== 'POST') {
+            return new Response('Method Not Allowed', { status: 405, headers: corsHeaders });
+        }
+
+        try {
+            const body = await request.json();
+            const { type, payload } = body;
+
+            if (type === 'gemini') {
+                // 使用環境變數中的 GEMINI_API_KEY
+                const geminiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${env.GEMINI_API_KEY}`;
+                const response = await fetch(geminiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
+                const data = await response.json();
+                return new Response(JSON.stringify(data), {
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                    status: response.status
+                });
+            }
+
+            if (type === 'elevenlabs-sfx' || type === 'elevenlabs-music') {
+                const endpoint = type === 'elevenlabs-sfx' 
+                    ? 'https://api.elevenlabs.io/v1/sound-generation' 
+                    : 'https://api.elevenlabs.io/v1/music';
+                
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'xi-api-key': env.ELEVENLABS_API_KEY, // 使用環境變數
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload),
+                });
+
+                if (!response.ok) {
+                    const errText = await response.text();
+                    return new Response(errText, { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+                }
+
+                const audioBuffer = await response.arrayBuffer();
+                return new Response(audioBuffer, {
+                    headers: { ...corsHeaders, 'Content-Type': 'audio/mpeg' },
+                    status: response.status
+                });
+            }
+
+            return new Response(JSON.stringify({ error: 'Invalid proxy type' }), {
+                status: 400,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+
+        } catch (err) {
+            return new Response(JSON.stringify({ error: err.message }), {
+                status: 500,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        }
+    },
+};</pre>
+                            <button
+                                onclick="navigator.clipboard.writeText(this.previousElementSibling.textContent); this.textContent='已複製！'; setTimeout(()=>this.textContent='複製程式碼', 2000);"
+                                class="absolute top-3 right-3 bg-white/10 hover:bg-white/30 text-white text-[10px] px-3 py-1.5 rounded-lg transition-colors backdrop-blur-sm border border-white/20 font-bold">
+                                複製程式碼
+                            </button>
+                        </div>
+
+                        <ul class="space-y-4 pl-2">
+                            <li class="flex gap-3">
+                                <span
+                                    class="flex-shrink-0 w-6 h-6 bg-gray-100 text-gray-600 rounded-full flex items-center justify-center text-xs font-bold mt-0.5">3</span>
+                                <div>
+                                    <p class="mb-2">點擊右上角 <strong>Deploy</strong> 儲存。接著到 <strong>Settings > Variables
+                                            and Secrets</strong> 新增以下變數：</p>
+                                    <div
+                                        class="bg-gray-50 p-3 rounded-xl border border-gray-100 text-xs font-mono space-y-1">
+                                        <div class="flex gap-2"><span
+                                                class="text-purple-600 font-bold">GEMINI_API_KEY</span> <span
+                                                class="text-gray-400">→</span> <span class="text-gray-600">(您的 Google
+                                                Gemini Key)</span></div>
+                                        <div class="flex gap-2"><span
+                                                class="text-purple-600 font-bold">ELEVENLABS_API_KEY</span> <span
+                                                class="text-gray-400">→</span> <span class="text-gray-600">(您的
+                                                ElevenLabs Key，選填)</span></div>
+                                    </div>
+                                    <p class="mt-3 text-xs text-gray-500">※ 設定完變數後，記得再點一次 Deploy 才會生效喔！</p>
+                                </div>
+                            </li>
+                            <li class="flex gap-3">
+                                <span
+                                    class="flex-shrink-0 w-6 h-6 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-xs font-bold mt-0.5">4</span>
+                                <div class="font-bold text-indigo-900">最後，將您的 Worker 網址 (如
+                                    <code>https://xxx.workers.dev</code>) 填入本工具的 AI 設定中即可！
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </section>
+            </div>
+
+            <div class="mt-6 pt-4 border-t border-gray-100 flex justify-end">
+                <button onclick="document.getElementById('help-modal').classList.add('hidden')"
+                    class="px-8 py-2.5 bg-gray-800 hover:bg-gray-900 text-white font-bold rounded-xl transition-colors shadow-lg">
+                    我學會了
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- 雲端主題清單 Modal -->
