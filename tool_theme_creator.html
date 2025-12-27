@@ -124,6 +124,29 @@
         ::-webkit-scrollbar-thumb:hover {
             background: rgba(0, 0, 0, 0.3);
         }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.02);
+            border-radius: 10px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(99, 102, 241, 0.2);
+            border-radius: 10px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(99, 102, 241, 0.4);
+        }
+
+        .question-card:focus-within {
+            border-color: #f97316;
+            box-shadow: 0 4px 6px -1px rgba(249, 115, 22, 0.1);
+        }
     </style>
 </head>
 
@@ -262,6 +285,7 @@
                         <textarea id="prompt-npc" class="hidden"></textarea>
                         <textarea id="prompt-loading" class="hidden"></textarea>
                         <textarea id="prompt-avatar" class="hidden"></textarea>
+                        <textarea id="prompt-bgm" class="hidden"></textarea>
                     </div>
                 </section>
 
@@ -295,7 +319,7 @@
                         </div>
                         <button id="undo-point"
                             class="px-4 py-2 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 disabled:opacity-50 transition-all font-bold"
-                            disabled>↩️ 复原</button>
+                            disabled>↩️ 復原</button>
                     </div>
 
                     <div id="map-preview-container" class="map-container shadow-2xl">
@@ -336,26 +360,43 @@
                                 </div>
                             </div>
                         </div>
-                        <!-- AI 題目 -->
+                        <!-- 題目編輯區 -->
                         <div class="space-y-4">
                             <div class="space-y-2 border-l-4 border-orange-400 pl-4 py-1">
-                                <h4 class="font-bold text-orange-950">區域 A: 題目生成設定</h4>
-                                <label class="block text-xs font-bold text-orange-700">自訂題目主題 (選填)</label>
+                                <div class="flex justify-between items-center mb-2">
+                                    <h4 class="font-bold text-orange-950">區域 A: 題目自訂與 AI 輔助</h4>
+                                    <button onclick="aiGenerateQuestions()"
+                                        class="px-4 py-1.5 bg-orange-500 text-white rounded-lg text-xs font-extrabold hover:bg-orange-600 shadow-sm transition-all active:scale-95 flex items-center gap-2">
+                                        ✨ AI 自動出題
+                                    </button>
+                                </div>
+                                <label class="block text-xs font-bold text-orange-700">AI 出題主題偏好 (選填)</label>
                                 <textarea id="ai-questions-topic" rows="2"
                                     class="w-full p-2.5 rounded-xl input-stylish text-xs"
                                     placeholder="例如：關於動物名稱、基本加減法..."></textarea>
-                                <button onclick="aiGenerateQuestions()"
-                                    class="w-full py-3 bg-orange-500 text-white rounded-xl text-sm font-extrabold hover:bg-orange-600 shadow-md transition-all active:scale-95 flex items-center justify-center gap-2">
-                                    ✨ 根據標記點生成題目
-                                </button>
                                 <p class="text-[10px] text-orange-600 mt-1 italic font-medium">※ 將根據您在「步驟
                                     3」標記的點位數量進行取名與出題。</p>
                             </div>
 
+                            <!-- 動態題目清單 -->
+                            <div id="questions-list-container"
+                                class="space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+                                <!-- 由 JS 動態注入題目卡片 -->
+                                <div
+                                    class="text-center py-10 text-gray-400 text-sm bg-white/20 rounded-2xl border-2 border-dashed border-gray-300">
+                                    請先在步驟 3 標記地圖點位 <br>
+                                    或點擊「AI 自動出題」
+                                </div>
+                            </div>
+
                             <div class="space-y-2 pt-2">
-                                <label class="block text-sm font-bold text-gray-500">遊戲題目 JSON 預覽</label>
-                                <div class="relative group">
-                                    <textarea id="output-questions-json" rows="8"
+                                <button
+                                    onclick="document.getElementById('json-preview-area').classList.toggle('hidden')"
+                                    class="text-[10px] text-gray-400 hover:text-indigo-500 font-bold transition-colors">
+                                    显示/隱藏 JSON 原始碼預覽
+                                </button>
+                                <div id="json-preview-area" class="relative group hidden">
+                                    <textarea id="output-questions-json" rows="6"
                                         class="w-full p-3 rounded-xl input-stylish text-[10px] font-mono bg-gray-900 text-green-400 shadow-inner"
                                         placeholder='{"map": [...], "questions": {...}}'></textarea>
                                     <button onclick="copyToClipboard('output-questions-json')"
@@ -609,6 +650,7 @@
             });
             dom.pointCountEl.textContent = coordinates.length;
             dom.undoBtn.disabled = coordinates.length === 0;
+            renderQuestionsEditor();
         }
 
         // --- 資源與頭像 ---
@@ -891,6 +933,131 @@ ${sfxArr.join(',\n')}
             if (result) setVal('txt-' + type, result.list.join('\n'));
         }
 
+        // --- 題目編輯器與資料同步 ---
+        function renderQuestionsEditor() {
+            const listContainer = document.getElementById('questions-list-container');
+            const jsonStr = document.getElementById('output-questions-json').value;
+            let data = { map: [], questions: {} };
+            try {
+                if (jsonStr) data = JSON.parse(jsonStr);
+            } catch (e) {
+                // 如果 JSON 格式錯誤，嘗試修復但不覆蓋
+                data = { map: [], questions: {} };
+            }
+
+            if (!data.map) data.map = [];
+            if (!data.questions) data.questions = {};
+
+            // 根據座標數量同步題目
+            while (data.map.length < coordinates.length) {
+                const id = `q${data.map.length + 1}`;
+                data.map.push({ city: `地點 ${data.map.length + 1}`, questionId: id, isMustHit: false });
+                data.questions[id] = { text: "在此輸入題目內容...", options: ["選項 A", "選項 B", "選項 C", "選項 D"], answer: 1 };
+            }
+            if (data.map.length > coordinates.length) {
+                data.map = data.map.slice(0, coordinates.length);
+            }
+
+            // 更新內部 JSON (同步座標的結構)
+            document.getElementById('output-questions-json').value = JSON.stringify(data, null, 2);
+
+            listContainer.innerHTML = '';
+            if (coordinates.length === 0) {
+                listContainer.innerHTML = `
+                    <div class="text-center py-10 text-gray-400 text-sm bg-white/20 rounded-2xl border-2 border-dashed border-gray-300">
+                        請先在步驟 3 標記地圖點位 <br>
+                        或點擊「AI 自動出題」
+                    </div>`;
+                return;
+            }
+
+            data.map.forEach((m, i) => {
+                const q = data.questions[m.questionId] || { text: "", options: ["", "", "", ""], answer: 1 };
+                const card = document.createElement('div');
+                card.className = "question-card bg-white/90 p-6 rounded-3xl shadow-sm border border-indigo-50 space-y-5 hover:shadow-xl hover:translate-y-[-2px] transition-all duration-300 relative overflow-hidden";
+
+                // 加一個側邊裝飾條
+                const accentBar = document.createElement('div');
+                accentBar.className = `absolute left-0 top-0 bottom-0 w-1.5 transition-colors duration-300 ${m.isMustHit ? 'bg-red-500' : 'bg-orange-400'}`;
+                card.appendChild(accentBar);
+
+                card.innerHTML += `
+                    <div class="flex items-start justify-between gap-4">
+                        <div class="flex-grow space-y-1">
+                            <div class="flex items-center gap-2">
+                                <span class="px-2 py-0.5 bg-orange-100 text-orange-600 rounded-lg font-black text-[10px] italic">POINT #${i + 1}</span>
+                                ${m.isMustHit ? '<span class="px-2 py-0.5 bg-red-100 text-red-600 rounded-lg font-bold text-[9px] animate-pulse">CRITICAL</span>' : ''}
+                            </div>
+                            <input type="text" value="${m.city}" 
+                                oninput="updateQuestionData(${i}, 'city', this.value)"
+                                placeholder="地點名稱 (如: 藏寶灣)" 
+                                class="w-full p-0 text-lg font-black bg-transparent border-none outline-none focus:ring-0 text-indigo-900 placeholder:text-indigo-200 transition-colors">
+                        </div>
+                        <label class="flex-shrink-0 flex flex-col items-center gap-1 cursor-pointer select-none group/musthit">
+                            <div class="relative w-10 h-5 bg-gray-200 rounded-full transition-colors group-hover:bg-gray-300 ${m.isMustHit ? '!bg-red-500' : ''}">
+                                <div class="absolute top-1 left-1 w-3 h-3 bg-white rounded-full transition-transform ${m.isMustHit ? 'translate-x-5' : ''}"></div>
+                            </div>
+                            <input type="checkbox" class="hidden" ${m.isMustHit ? 'checked' : ''} 
+                                onchange="updateQuestionData(${i}, 'isMustHit', this.checked); renderQuestionsEditor();">
+                            <span class="text-[9px] font-bold ${m.isMustHit ? 'text-red-500' : 'text-gray-400'} transition-colors uppercase">強制停靠</span>
+                        </label>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="relative">
+                            <label class="absolute -top-2 left-3 px-1 bg-white text-[9px] font-black text-indigo-400 uppercase tracking-widest z-10">問題描述</label>
+                            <textarea oninput="updateQuestionData(${i}, 'text', this.value)"
+                                class="w-full p-4 pt-5 text-sm rounded-2xl border border-indigo-50 bg-indigo-50/30 focus:bg-white focus:ring-2 ring-orange-100 outline-none transition-all min-h-[80px]" 
+                                placeholder="在此輸入您的問題內容...">${q.text}</textarea>
+                        </div>
+
+                        <div class="grid grid-cols-1 gap-2.5">
+                            ${q.options.map((opt, oi) => `
+                                <div class="flex items-center gap-3 group/opt">
+                                    <label class="relative flex items-center justify-center w-8 h-8 flex-shrink-0 cursor-pointer">
+                                        <input type="radio" name="ans-${i}" ${q.answer === oi + 1 ? 'checked' : ''} 
+                                            onchange="updateQuestionData(${i}, 'answer', ${oi + 1})"
+                                            class="peer hidden">
+                                        <div class="w-full h-full border-2 border-indigo-100 rounded-xl flex items-center justify-center text-[11px] font-bold text-indigo-300 transition-all
+                                            peer-checked:border-orange-500 peer-checked:bg-orange-500 peer-checked:text-white peer-checked:shadow-lg peer-checked:shadow-orange-200
+                                            group-hover/opt:border-orange-200">
+                                            ${String.fromCharCode(65 + oi)}
+                                        </div>
+                                    </label>
+                                    <input type="text" value="${opt}" 
+                                        oninput="updateQuestionData(${i}, 'option', this.value, ${oi})"
+                                        placeholder="輸入選項內容"
+                                        class="flex-grow p-2.5 text-xs rounded-xl border border-transparent bg-indigo-50/20 group-hover/opt:bg-indigo-50 focus:bg-white focus:border-indigo-100 outline-none transition-all">
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+                listContainer.appendChild(card);
+            });
+        }
+
+        window.updateQuestionData = function (index, field, value, optIndex) {
+            const jsonStr = document.getElementById('output-questions-json').value;
+            let data = { map: [], questions: {} };
+            try { data = JSON.parse(jsonStr); } catch (e) { }
+
+            const m = data.map[index];
+            if (!m) return;
+            const q = data.questions[m.questionId];
+            if (!q) return;
+
+            if (field === 'city') m.city = value;
+            else if (field === 'isMustHit') m.isMustHit = value;
+            else if (field === 'text') q.text = value;
+            else if (field === 'answer') q.answer = parseInt(value);
+            else if (field === 'option') q.options[optIndex] = value;
+
+            document.getElementById('output-questions-json').value = JSON.stringify(data, null, 2);
+            // 由於不重新 render，確保 generateAll 能抓到最新資料
+            generateAll();
+        };
+
         async function aiGenerateQuestions() {
             const count = coordinates.length;
             if (count === 0) return alert("請先在上方地圖點擊標註至少一個地點，AI 才能為您取名並製作題目。");
@@ -915,6 +1082,7 @@ ${sfxArr.join(',\n')}
             const result = await aiCall(prompt);
             if (result) {
                 document.getElementById('output-questions-json').value = JSON.stringify(result, null, 2);
+                renderQuestionsEditor();
                 alert("遊戲題目集生成成功！已套用於本地與雲端發佈區。");
             }
         }
@@ -923,39 +1091,49 @@ ${sfxArr.join(',\n')}
             const prompt = document.getElementById(promptSourceId).value.trim();
             if (!prompt) return alert("請先生成 AI 提示詞！");
 
-            showLoading(true, "正在繪製圖像 (Pollinations.ai)...");
-            try {
-                // Pollinations.ai 直接生成 URL
-                const seed = Math.floor(Math.random() * 10000);
-                const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1024&height=1024&seed=${seed}&nologo=true`;
+            let maxRetries = 2;
+            let attempt = 0;
+            let success = false;
 
-                // 使用 Promise 等待圖片載入完成
-                await new Promise((resolve, reject) => {
-                    const img = new Image();
-                    img.crossOrigin = "anonymous";
-                    img.onload = () => {
-                        if (targetImgId) document.getElementById(targetImgId).src = imageUrl;
-                        if (targetIdInputId) document.getElementById(targetIdInputId).value = imageUrl;
-                        generateAll();
-                        resolve();
-                    };
-                    img.onerror = () => {
-                        reject(new Error("圖片載入失敗 (可能是伺服器忙碌或超時)，請稍後再試或更換提示詞。"));
-                    };
-                    // 設定超時機制 (例如 30 秒)
-                    setTimeout(() => {
-                        reject(new Error("圖片載入超時 (30s)，請檢查網路或稍後再試。"));
-                    }, 30000);
+            while (attempt <= maxRetries && !success) {
+                attempt++;
+                const statusSuffix = attempt > 1 ? ` (重試第 ${attempt - 1} 次)...` : "...";
+                showLoading(true, `正在繪製圖像 (Pollinations.ai)${statusSuffix}`);
 
-                    img.src = imageUrl;
-                });
+                try {
+                    const seed = Math.floor(Math.random() * 1000000);
+                    // 使用 Flux 模型以獲得更高清晰度與穩定性，解析度提升至 1280x1280
+                    const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1280&height=1280&seed=${seed}&nologo=true&model=flux`;
 
-            } catch (err) {
-                console.error("Image Generation Error:", err);
-                alert("生圖失敗: " + err.message);
-            } finally {
-                showLoading(false);
+                    await new Promise((resolve, reject) => {
+                        const img = new Image();
+                        img.crossOrigin = "anonymous";
+                        img.onload = () => {
+                            if (targetImgId) document.getElementById(targetImgId).src = imageUrl;
+                            if (targetIdInputId) document.getElementById(targetIdInputId).value = imageUrl;
+                            generateAll();
+                            success = true;
+                            resolve();
+                        };
+                        img.onerror = () => reject(new Error("圖片載入失敗 (伺服器可能忙碌中)"));
+
+                        // 30秒超時
+                        setTimeout(() => reject(new Error("圖片載入超時 (30s)")), 30000);
+
+                        img.src = imageUrl;
+                    });
+                } catch (err) {
+                    console.warn(`生圖嘗試 ${attempt} 失敗:`, err.message);
+                    if (attempt > maxRetries) {
+                        alert("生圖失敗: " + err.message + "\n請稍後再試或更換提示詞。");
+                    }
+                    // 失敗後稍等一下再重試
+                    if (!success && attempt <= maxRetries) {
+                        await new Promise(r => setTimeout(r, 1000));
+                    }
+                }
             }
+            showLoading(false);
         }
 
         async function aiGeneratePrompts() {
@@ -982,6 +1160,7 @@ ${sfxArr.join(',\n')}
                 document.getElementById('prompt-npc').value = result.npc;
                 document.getElementById('prompt-loading').value = result.loading;
                 document.getElementById('prompt-avatar').value = result.avatar;
+                document.getElementById('prompt-bgm').value = result.bgm;
                 // 存儲頭像組以便後續使用
                 window.AI_AVATAR_PROMPTS = result.avatars;
 
@@ -991,7 +1170,7 @@ ${sfxArr.join(',\n')}
                         <div class="p-3 bg-purple-50/50 rounded-xl"><strong class="text-[10px] text-purple-400 uppercase">Map Background</strong><p class="text-xs mt-1 italic">"${result.map}"</p></div>
                         <div class="p-3 bg-purple-50/50 rounded-xl"><strong class="text-[10px] text-purple-400 uppercase">NPC Guide</strong><p class="text-xs mt-1 italic">"${result.npc}"</p></div>
                         <div class="p-3 bg-purple-50/50 rounded-xl"><strong class="text-[10px] text-purple-400 uppercase">Loading Anim</strong><p class="text-xs mt-1 italic">"${result.loading}"</p></div>
-                        <div class="p-3 bg-purple-50/50 rounded-xl"><strong class="text-[10px] text-purple-400 uppercase">Music Tags</strong><p class="text-xs mt-1 italic">"${result.bgm}"</p></div>
+                        <div class="p-3 bg-purple-50/50 rounded-xl"><strong class="text-[10px] text-purple-400 uppercase">Music Tags</strong><p id="display-prompt-bgm" class="text-xs mt-1 italic">"${result.bgm}"</p></div>
                     </div>
                 `;
                 document.getElementById('ai-prompts-output').classList.remove('hidden');
@@ -1248,6 +1427,14 @@ ${sfxArr.join(',\n')}
                     description: getVal('theme-desc'),
                     gasUrl: getVal('gas-url'),
                     coordinates: coordinates,
+                    aiPrompts: {
+                        map: document.getElementById('prompt-map').value,
+                        npc: document.getElementById('prompt-npc').value,
+                        loading: document.getElementById('prompt-loading').value,
+                        avatar: document.getElementById('prompt-avatar').value,
+                        bgm: document.getElementById('prompt-bgm').value,
+                        questionsTopic: document.getElementById('ai-questions-topic').value
+                    },
                     assets: {
                         avatars: avatars,
                         images: {
@@ -1381,9 +1568,37 @@ ${sfxArr.join(',\n')}
                 setVal('sfx-fail', sfx.fail || sfx['sfx-fail'] || '');
                 setVal('sfx-complete', sfx.complete || sfx['sfx-complete'] || '');
 
+                // 填入 AI 提示詞 (如有)
+                if (config.aiPrompts) {
+                    const ap = config.aiPrompts;
+                    document.getElementById('prompt-map').value = ap.map || '';
+                    document.getElementById('prompt-npc').value = ap.npc || '';
+                    document.getElementById('prompt-loading').value = ap.loading || '';
+                    document.getElementById('prompt-avatar').value = ap.avatar || '';
+                    document.getElementById('prompt-bgm').value = ap.bgm || '';
+                    setVal('ai-questions-topic', ap.questionsTopic || '');
+
+                    // 若有提示詞，顯示預覽區塊
+                    if (ap.map || ap.npc) {
+                        document.getElementById('ai-prompts-output').innerHTML = `
+                            <div class="mb-4 text-purple-900 font-extrabold border-b border-purple-200 pb-2 text-base">✨ 已載入的 AI 美術提案</div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="p-3 bg-purple-50/50 rounded-xl"><strong class="text-[10px] text-purple-400 uppercase">Map Background</strong><p class="text-xs mt-1 italic">"${ap.map || ''}"</p></div>
+                                <div class="p-3 bg-purple-50/50 rounded-xl"><strong class="text-[10px] text-purple-400 uppercase">NPC Guide</strong><p class="text-xs mt-1 italic">"${ap.npc || ''}"</p></div>
+                                <div class="p-3 bg-purple-50/50 rounded-xl"><strong class="text-[10px] text-purple-400 uppercase">Loading Anim</strong><p class="text-xs mt-1 italic">"${ap.loading || ''}"</p></div>
+                                <div class="p-3 bg-purple-50/50 rounded-xl"><strong class="text-[10px] text-purple-400 uppercase">Music Tags</strong><p class="text-xs mt-1 italic">"${ap.bgm || ''}"</p></div>
+                            </div>
+                        `;
+                        document.getElementById('ai-prompts-output').classList.remove('hidden');
+                        document.getElementById('prompts-control').classList.remove('hidden');
+                        document.getElementById('btn-gen-map').disabled = false;
+                    }
+                }
+
                 // 填入題目
                 if (questions) {
                     document.getElementById('output-questions-json').value = JSON.stringify(questions, null, 2);
+                    renderQuestionsEditor();
                 }
 
                 document.getElementById('cloud-themes-modal').classList.add('hidden');
@@ -1451,6 +1666,7 @@ ${sfxArr.join(',\n')}
         window.generateAIImage = generateAIImage;
         window.addAvatarRow = addAvatarRow;
         window.saveAISettings = saveAISettings;
+        window.renderQuestionsEditor = renderQuestionsEditor;
 
         // --- UI 小工具 ---
         function showLoading(show, text) {
@@ -1491,13 +1707,16 @@ ${sfxArr.join(',\n')}
                 updatePoints(); generateAll();
             });
 
-            // 复原上一點
+            // 復原上一點
             dom.undoBtn.onclick = () => { coordinates.pop(); updatePoints(); generateAll(); };
 
             // 自動更新
             document.querySelectorAll('input, textarea').forEach(el => {
                 el.addEventListener('input', generateAll);
             });
+
+            // 題目 JSON 變動時同步回編輯介面
+            document.getElementById('output-questions-json').addEventListener('change', renderQuestionsEditor);
 
             // 預載 API Key
             document.getElementById('ai-api-key').value = localStorage.getItem('GEMINI_API_KEY') || '';
